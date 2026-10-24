@@ -57,6 +57,24 @@ npm run dev
 | API y documentación | http://localhost:8000/api/docs |
 | Servicio ML | http://localhost:8001/docs |
 
+### Base de datos
+
+Con los contenedores levantados, aplica las migraciones y crea los usuarios de prueba:
+
+```bash
+docker compose exec api alembic upgrade head
+docker compose exec api python -m scripts.seed_dev
+```
+
+| Usuario | Rol |
+|---|---|
+| director@edutrack.dev | Director |
+| docente@edutrack.dev | Docente |
+| padre@edutrack.dev | Padre de familia |
+| analista@edutrack.dev | Analista |
+
+Todos usan la contraseña `Edutrack123!`.
+
 Para levantar también el frontend compilado detrás de Nginx: `docker compose --profile full up --build` y abrir http://localhost:8080.
 
 ## Tests

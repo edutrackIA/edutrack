@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     ml_service_url: str = "http://localhost:8001"
     cors_origins: list[str] = ["http://localhost:5173"]
 
+    jwt_secret: str = "dev-only-secret-change-me-in-env-file-0123456789"
+    jwt_algorithm: str = "HS256"
+    access_token_ttl_minutes: int = 15
+    refresh_token_ttl_days: int = 7
+    bcrypt_rounds: int = 12
+
 
 @lru_cache
 def get_settings() -> Settings:
