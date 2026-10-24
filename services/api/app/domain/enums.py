@@ -30,3 +30,11 @@ class ImportStatus(StrEnum):
     PENDING = "PENDING"
     DONE = "DONE"
     FAILED = "FAILED"
+
+
+class ParentEducation(StrEnum):
+    NONE = "NONE"
+    PRIMARY = "PRIMARY"
+    SECONDARY = "SECONDARY"
+    TECHNICAL = "TECHNICAL"
+    UNIVERSITY = "UNIVERSITY"

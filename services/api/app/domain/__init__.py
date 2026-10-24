@@ -2,7 +2,15 @@ from app.domain.academic_period import AcademicPeriod
 from app.domain.attendance import Attendance
 from app.domain.classroom import Classroom
 from app.domain.course_assignment import CourseAssignment
-from app.domain.enums import AttendanceStatus, ImportKind, ImportStatus, Role, Sex
+from app.domain.enums import (
+    AttendanceStatus,
+    ImportKind,
+    ImportStatus,
+    ParentEducation,
+    Role,
+    Sex,
+)
+from app.domain.family_survey import FamilySurvey
 from app.domain.grade import BehaviorRecord, Grade
 from app.domain.import_job import ImportJob
 from app.domain.institution import Institution
@@ -18,12 +26,14 @@ __all__ = [
     "BehaviorRecord",
     "Classroom",
     "CourseAssignment",
+    "FamilySurvey",
     "Grade",
     "Guardianship",
     "ImportJob",
     "ImportKind",
     "ImportStatus",
     "Institution",
+    "ParentEducation",
     "RefreshToken",
     "Role",
     "Sex",
