@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.core.errors import ConflictError, NotFoundError
+from app.core.errors import BadGatewayError, ConflictError, NotFoundError
 from app.core.time import utcnow
 from app.domain import (
     Alert,
@@ -15,6 +15,8 @@ from app.domain import (
 from app.repositories.recommendation_repository import AlertRepository, RecommendationRepository
 from app.repositories.student_repository import StudentRepository
 from app.services.access_policy import AccessPolicy
+from app.services.notifications.email_sender import EmailSender
+from app.services.notifications.notification_service import NotificationService
 from app.services.recommendations.generator import RecommendationGenerator
 
 ALERT_LEVELS = {RiskLevel.MEDIUM, RiskLevel.HIGH}
@@ -79,8 +81,21 @@ class RecommendationService:
         self.db.commit()
         return recommendation
 
-    def approve(self, user: User, recommendation_id: int) -> Recommendation:
-        return self._review(user, recommendation_id, RecommendationStatus.APPROVED)
+    def approve(self, user: User, recommendation_id: int, sender: EmailSender) -> Recommendation:
+        recommendation = self._review(user, recommendation_id, RecommendationStatus.APPROVED)
+        NotificationService(self.db, sender).send_recommendation(recommendation)
+        return recommendation
+
+    def resend(self, user: User, recommendation_id: int, sender: EmailSender) -> Recommendation:
+        recommendation = self.recommendations.get(recommendation_id)
+        if recommendation is None:
+            raise NotFoundError("Recommendation not found")
+        self.policy.ensure_can_manage_commitments(user, recommendation.student)
+        if recommendation.status != RecommendationStatus.APPROVED:
+            raise ConflictError("Only approved recommendations can be sent")
+        if not NotificationService(self.db, sender).send_recommendation(recommendation):
+            raise BadGatewayError("The email could not be delivered", code="EMAIL_NOT_SENT")
+        return recommendation
 
     def discard(self, user: User, recommendation_id: int) -> Recommendation:
         return self._review(user, recommendation_id, RecommendationStatus.DISCARDED)

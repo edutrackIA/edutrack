@@ -6,6 +6,7 @@ os.environ["API_JWT_SECRET"] = "test-secret-key-that-is-at-least-32-bytes-long"
 from collections.abc import Callable, Iterator  # noqa: E402
 from dataclasses import dataclass  # noqa: E402
 from datetime import date, timedelta  # noqa: E402
+from email.message import EmailMessage  # noqa: E402
 from typing import Any  # noqa: E402
 
 import pytest  # noqa: E402
@@ -34,6 +35,7 @@ from app.domain import (  # noqa: E402
     User,
 )
 from app.main import app  # noqa: E402
+from app.services.notifications.email_sender import get_email_sender  # noqa: E402
 from app.services.risk.ml_client import get_ml_client  # noqa: E402
 
 DEFAULT_PASSWORD = "Secret123!"
@@ -333,3 +335,27 @@ def assessed_school(client: TestClient, evaluated_school: School, fake_ml: FakeM
         headers=auth(school.analyst),
     )
     return school
+
+
+# --- Correo ----------------------------------------------------------------
+
+
+class Outbox:
+    """Captures emails instead of sending them; can simulate an SMTP failure."""
+
+    def __init__(self) -> None:
+        self.messages: list[EmailMessage] = []
+        self.fail = False
+
+    def send(self, message: EmailMessage) -> None:
+        if self.fail:
+            raise ConnectionRefusedError("SMTP server unavailable")
+        self.messages.append(message)
+
+
+@pytest.fixture(autouse=True)
+def outbox() -> Iterator[Outbox]:
+    box = Outbox()
+    app.dependency_overrides[get_email_sender] = lambda: box
+    yield box
+    app.dependency_overrides.pop(get_email_sender, None)
