@@ -1,0 +1,610 @@
+openapi: 3.1.0
+info:
+  title: EduTrack API
+  version: 0.1.0
+  description: API principal de EduTrack. Todas las rutas requieren `Authorization Bearer` salvo login y refresh.
+servers:
+  - url: http://localhost:8000/api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: auth
+  - name: students
+  - name: imports
+  - name: risk
+  - name: alerts
+  - name: dashboard
+  - name: commitments
+  - name: reports
+  - name: settings
+paths:
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Iniciar sesión (RF-01)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+      responses:
+        "200": { $ref: "#/components/responses/Tokens" }
+        "401": { $ref: "#/components/responses/Error" }
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Renovar tokens (rotación)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Tokens" }
+        "401": { $ref: "#/components/responses/Error" }
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Revocar el refresh token
+      responses:
+        "204": { description: Sesión cerrada }
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Usuario autenticado
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+
+  /classrooms:
+    get:
+      tags: [students]
+      summary: Aulas visibles para el usuario
+      description: DIRECTOR y ANALYST ven todas las de su institución; TEACHER solo las suyas.
+      parameters:
+        - { name: year, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Classroom" } }
+  /classrooms/{classroomId}/students:
+    get:
+      tags: [students]
+      summary: Estudiantes de un aula con su último nivel de riesgo
+      parameters:
+        - { $ref: "#/components/parameters/ClassroomId" }
+        - { $ref: "#/components/parameters/PeriodIdQuery" }
+        - { name: level, in: query, schema: { $ref: "#/components/schemas/RiskLevel" } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/StudentListItem" } }
+        "403": { $ref: "#/components/responses/Error" }
+  /students/{studentId}:
+    get:
+      tags: [students]
+      summary: Ficha del estudiante (RF-02)
+      parameters: [{ $ref: "#/components/parameters/StudentId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Student" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+    patch:
+      tags: [students]
+      summary: Actualizar datos del estudiante
+      parameters: [{ $ref: "#/components/parameters/StudentId" }]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudentUpdate" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Student" }
+  /students/{studentId}/grades:
+    get:
+      tags: [students]
+      summary: Notas por periodo
+      parameters:
+        - { $ref: "#/components/parameters/StudentId" }
+        - { $ref: "#/components/parameters/PeriodIdQuery" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Grade" } }
+    put:
+      tags: [students]
+      summary: Registrar o actualizar notas (upsert)
+      parameters: [{ $ref: "#/components/parameters/StudentId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: array, items: { $ref: "#/components/schemas/GradeInput" } }
+      responses:
+        "200": { description: Notas guardadas }
+  /students/{studentId}/behavior:
+    put:
+      tags: [students]
+      summary: Registrar conducta del periodo
+      parameters: [{ $ref: "#/components/parameters/StudentId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [period_id, rating]
+              properties:
+                period_id: { type: integer }
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                notes: { type: string, maxLength: 1000 }
+      responses:
+        "200": { description: Conducta guardada }
+  /students/{studentId}/summary:
+    get:
+      tags: [students]
+      summary: Resumen para padres (RF-07)
+      parameters: [{ $ref: "#/components/parameters/StudentId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentSummary" }
+  /students/{studentId}/surveys:
+    post:
+      tags: [students]
+      summary: Responder encuesta sociofamiliar (PARENT)
+      parameters: [{ $ref: "#/components/parameters/StudentId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FamilySurveyInput" }
+      responses:
+        "201": { description: Encuesta registrada }
+        "409": { $ref: "#/components/responses/Error" }
+  /me/children:
+    get:
+      tags: [students]
+      summary: Hijos del padre autenticado
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/StudentListItem" } }
+
+  /imports:
+    post:
+      tags: [imports]
+      summary: Carga masiva CSV/Excel (RF-03, ANALYST)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [kind, file]
+              properties:
+                kind: { type: string, enum: [STUDENTS, GRADES, ATTENDANCE] }
+                period_id: { type: integer }
+                file: { type: string, format: binary }
+      responses:
+        "202":
+          description: Importación aceptada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportJob" }
+        "415": { $ref: "#/components/responses/Error" }
+  /imports/{importId}:
+    get:
+      tags: [imports]
+      summary: Estado y errores de una importación
+      parameters:
+        - { name: importId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportJob" }
+
+  /risk-assessments/run:
+    post:
+      tags: [risk]
+      summary: Ejecutar el modelo predictivo (RF-04, ANALYST)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [period_id]
+              properties:
+                period_id: { type: integer }
+                classroom_id: { type: integer, description: Si se omite, evalúa toda la institución }
+      responses:
+        "200":
+          description: Resumen de la ejecución
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  evaluated: { type: integer }
+                  skipped: { type: integer, description: Estudiantes sin datos suficientes }
+                  model_version: { type: string }
+                  by_level:
+                    type: object
+                    properties:
+                      LOW: { type: integer }
+                      MEDIUM: { type: integer }
+                      HIGH: { type: integer }
+        "502": { $ref: "#/components/responses/Error" }
+  /students/{studentId}/risk:
+    get:
+      tags: [risk]
+      summary: Historial de riesgo con factores y sugerencias
+      parameters: [{ $ref: "#/components/parameters/StudentId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/RiskAssessment" } }
+
+  /alerts:
+    get:
+      tags: [alerts]
+      summary: Alertas del usuario autenticado (RF-06)
+      parameters:
+        - { name: unread, in: query, schema: { type: boolean } }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/Size" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  items: { type: array, items: { $ref: "#/components/schemas/Alert" } }
+  /alerts/{alertId}:
+    patch:
+      tags: [alerts]
+      summary: Marcar alerta como leída
+      parameters:
+        - { name: alertId, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                is_read: { type: boolean }
+      responses:
+        "200": { description: Actualizada }
+
+  /dashboard/summary:
+    get:
+      tags: [dashboard]
+      summary: Indicadores globales con semáforos (RF-05, DIRECTOR)
+      parameters: [{ $ref: "#/components/parameters/PeriodIdQuery" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DashboardSummary" }
+
+  /students/{studentId}/commitments:
+    get:
+      tags: [commitments]
+      summary: Compromisos del estudiante (RF-08)
+      parameters: [{ $ref: "#/components/parameters/StudentId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Commitment" } }
+    post:
+      tags: [commitments]
+      summary: Registrar acta y compromiso (TEACHER tutor)
+      parameters: [{ $ref: "#/components/parameters/StudentId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommitmentInput" }
+      responses:
+        "201":
+          description: Creado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Commitment" }
+
+  /reports/risk:
+    get:
+      tags: [reports]
+      summary: Reporte PDF de riesgo (RF-09, DIRECTOR)
+      parameters:
+        - { $ref: "#/components/parameters/PeriodIdQuery" }
+        - { name: classroom_id, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: PDF
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+
+  /settings/risk-thresholds:
+    get:
+      tags: [settings]
+      summary: Umbrales de riesgo de la institución (RF-10)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RiskThresholds" }
+    put:
+      tags: [settings]
+      summary: Actualizar umbrales (ANALYST)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RiskThresholds" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RiskThresholds" }
+        "422": { description: medium_from debe ser menor que high_from }
+
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    StudentId: { name: studentId, in: path, required: true, schema: { type: integer } }
+    ClassroomId: { name: classroomId, in: path, required: true, schema: { type: integer } }
+    PeriodIdQuery: { name: period_id, in: query, required: false, schema: { type: integer }, description: Por defecto, el periodo actual }
+    Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    Size: { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+  responses:
+    Tokens:
+      description: Tokens emitidos
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              access_token: { type: string }
+              refresh_token: { type: string }
+              token_type: { type: string, example: bearer }
+              expires_in: { type: integer, example: 900 }
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: FORBIDDEN }
+        message: { type: string }
+        details: {}
+    Role: { type: string, enum: [DIRECTOR, TEACHER, PARENT, ANALYST] }
+    RiskLevel: { type: string, enum: [LOW, MEDIUM, HIGH] }
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        email: { type: string, format: email }
+        full_name: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+        institution_id: { type: integer }
+    Classroom:
+      type: object
+      properties:
+        id: { type: integer }
+        year: { type: integer }
+        grade: { type: integer, minimum: 1, maximum: 5 }
+        section: { type: string }
+        tutor: { $ref: "#/components/schemas/User" }
+        student_count: { type: integer }
+    StudentListItem:
+      type: object
+      properties:
+        id: { type: integer }
+        code: { type: string }
+        full_name: { type: string }
+        classroom: { type: string, example: 3° B }
+        risk_level: { oneOf: [{ $ref: "#/components/schemas/RiskLevel" }, { type: "null" }] }
+        probability: { type: [number, "null"] }
+    Student:
+      type: object
+      properties:
+        id: { type: integer }
+        code: { type: string }
+        first_name: { type: string }
+        last_name: { type: string }
+        birth_date: { type: string, format: date }
+        sex: { type: string, enum: [M, F] }
+        classroom_id: { type: integer }
+        guardians: { type: array, items: { $ref: "#/components/schemas/User" } }
+        latest_risk: { oneOf: [{ $ref: "#/components/schemas/RiskAssessment" }, { type: "null" }] }
+    StudentUpdate:
+      type: object
+      properties:
+        first_name: { type: string }
+        last_name: { type: string }
+        classroom_id: { type: integer }
+    Grade:
+      type: object
+      properties:
+        subject: { type: string }
+        period_id: { type: integer }
+        score: { type: number, minimum: 0, maximum: 20 }
+    GradeInput:
+      type: object
+      required: [subject_id, period_id, score]
+      properties:
+        subject_id: { type: integer }
+        period_id: { type: integer }
+        score: { type: number, minimum: 0, maximum: 20 }
+    StudentSummary:
+      type: object
+      properties:
+        student: { $ref: "#/components/schemas/StudentListItem" }
+        average_score: { type: number }
+        attendance_rate: { type: number }
+        grades: { type: array, items: { $ref: "#/components/schemas/Grade" } }
+        parent_suggestions: { type: array, items: { type: string } }
+    FamilySurveyInput:
+      type: object
+      required: [period_id, study_hours_week, parent_education, home_internet, has_study_device, family_communication, student_works, household_size]
+      properties:
+        period_id: { type: integer }
+        study_hours_week: { type: integer, minimum: 0, maximum: 60 }
+        parent_education: { type: string, enum: [NONE, PRIMARY, SECONDARY, TECHNICAL, UNIVERSITY] }
+        home_internet: { type: boolean }
+        has_study_device: { type: boolean }
+        family_communication: { type: integer, minimum: 1, maximum: 5 }
+        student_works: { type: boolean }
+        household_size: { type: integer, minimum: 1, maximum: 20 }
+    ImportJob:
+      type: object
+      properties:
+        id: { type: integer }
+        kind: { type: string, enum: [STUDENTS, GRADES, ATTENDANCE] }
+        filename: { type: string }
+        status: { type: string, enum: [PENDING, DONE, FAILED] }
+        rows_ok: { type: integer }
+        rows_failed: { type: integer }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              row: { type: integer }
+              column: { type: string }
+              message: { type: string }
+    RiskAssessment:
+      type: object
+      properties:
+        id: { type: integer }
+        period_id: { type: integer }
+        probability: { type: number }
+        level: { $ref: "#/components/schemas/RiskLevel" }
+        model_version: { type: string }
+        top_factors:
+          type: array
+          items:
+            type: object
+            properties:
+              feature: { type: string }
+              label: { type: string, example: Asistencia }
+              contribution: { type: number }
+        suggestions:
+          type: array
+          items:
+            type: object
+            properties:
+              audience: { type: string, enum: [TEACHER, PARENT] }
+              content: { type: string }
+        created_at: { type: string, format: date-time }
+    Alert:
+      type: object
+      properties:
+        id: { type: integer }
+        student: { $ref: "#/components/schemas/StudentListItem" }
+        level: { $ref: "#/components/schemas/RiskLevel" }
+        is_read: { type: boolean }
+        created_at: { type: string, format: date-time }
+    DashboardSummary:
+      type: object
+      properties:
+        period_id: { type: integer }
+        total_students: { type: integer }
+        evaluated_students: { type: integer }
+        by_level:
+          type: object
+          properties:
+            LOW: { type: integer }
+            MEDIUM: { type: integer }
+            HIGH: { type: integer }
+        by_classroom:
+          type: array
+          items:
+            type: object
+            properties:
+              classroom_id: { type: integer }
+              label: { type: string }
+              high: { type: integer }
+              medium: { type: integer }
+              low: { type: integer }
+        top_factors:
+          type: array
+          items:
+            type: object
+            properties:
+              feature: { type: string }
+              frequency: { type: integer }
+    Commitment:
+      allOf:
+        - $ref: "#/components/schemas/CommitmentInput"
+        - type: object
+          properties:
+            id: { type: integer }
+            tutor_id: { type: integer }
+            status: { type: string, enum: [OPEN, FULFILLED, BREACHED] }
+    CommitmentInput:
+      type: object
+      required: [guardian_id, meeting_date, agreements]
+      properties:
+        guardian_id: { type: integer }
+        meeting_date: { type: string, format: date }
+        agreements: { type: string, maxLength: 4000 }
+        follow_up_date: { type: string, format: date }
+    RiskThresholds:
+      type: object
+      required: [medium_from, high_from]
+      properties:
+        medium_from: { type: number, minimum: 0, maximum: 1, example: 0.4 }
+        high_from: { type: number, minimum: 0, maximum: 1, example: 0.7 }
