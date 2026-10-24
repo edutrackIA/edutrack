@@ -1,0 +1,142 @@
+openapi: 3.1.0
+info:
+  title: EduTrack ML Service
+  version: 0.1.0
+  description: Servicio interno de inferencia del riesgo académico. No expuesto públicamente.
+servers:
+  - url: http://ml:8001
+paths:
+  /health:
+    get:
+      summary: Estado del servicio
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  model_loaded: { type: boolean }
+  /v1/model:
+    get:
+      summary: Metadatos del modelo cargado
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ModelInfo" }
+  /v1/predict:
+    post:
+      summary: Predicción para un estudiante
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PredictionRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Prediction" }
+        "422": { description: Características inválidas }
+        "503": { description: Modelo no cargado }
+  /v1/predict/batch:
+    post:
+      summary: Predicción por lotes (máx. 500)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  maxItems: 500
+                  items: { $ref: "#/components/schemas/PredictionRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  model_version: { type: string }
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Prediction" }
+        "422": { description: Características inválidas }
+components:
+  schemas:
+    Features:
+      type: object
+      description: Vector de características construido por la API principal.
+      required:
+        - avg_score
+        - failed_subjects
+        - score_trend
+        - attendance_rate
+        - late_count
+        - behavior_rating
+        - study_hours_week
+        - parent_education
+        - home_internet
+        - has_study_device
+        - family_communication
+        - student_works
+        - household_size
+      properties:
+        avg_score: { type: number, minimum: 0, maximum: 20 }
+        failed_subjects: { type: integer, minimum: 0 }
+        score_trend: { type: number, description: Diferencia del promedio respecto al periodo anterior }
+        attendance_rate: { type: number, minimum: 0, maximum: 1 }
+        late_count: { type: integer, minimum: 0 }
+        behavior_rating: { type: integer, minimum: 1, maximum: 5 }
+        study_hours_week: { type: integer, minimum: 0, maximum: 60 }
+        parent_education: { type: string, enum: [NONE, PRIMARY, SECONDARY, TECHNICAL, UNIVERSITY] }
+        home_internet: { type: boolean }
+        has_study_device: { type: boolean }
+        family_communication: { type: integer, minimum: 1, maximum: 5 }
+        student_works: { type: boolean }
+        household_size: { type: integer, minimum: 1, maximum: 20 }
+    PredictionRequest:
+      type: object
+      required: [student_id, features]
+      properties:
+        student_id: { type: integer }
+        features: { $ref: "#/components/schemas/Features" }
+    Prediction:
+      type: object
+      properties:
+        student_id: { type: integer }
+        probability: { type: number, minimum: 0, maximum: 1 }
+        model_version: { type: string, example: rf-2026.10.1 }
+        top_factors:
+          type: array
+          maxItems: 5
+          items:
+            type: object
+            properties:
+              feature: { type: string, example: attendance_rate }
+              value: {}
+              contribution: { type: number }
+    ModelInfo:
+      type: object
+      properties:
+        version: { type: string }
+        algorithm: { type: string, example: RandomForestClassifier }
+        trained_at: { type: string, format: date-time }
+        features: { type: array, items: { type: string } }
+        metrics:
+          type: object
+          properties:
+            f1: { type: number }
+            roc_auc: { type: number }
+            recall: { type: number }
+            precision: { type: number }
