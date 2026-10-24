@@ -1,0 +1,58 @@
+name: edutrack
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_HOST_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    mem_limit: 768m
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  api:
+    build: ./services/api
+    env_file: .env
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./services/api:/app
+    ports:
+      - "8000:8000"
+    mem_limit: 512m
+    depends_on:
+      mysql:
+        condition: service_healthy
+      ml:
+        condition: service_started
+
+  ml:
+    build: ./services/ml
+    env_file: .env
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+    volumes:
+      - ./services/ml:/app
+    ports:
+      - "8001:8001"
+    mem_limit: 512m
+
+  web:
+    build: ./apps/web
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    profiles:
+      - full
+
+volumes:
+  mysql-data:
