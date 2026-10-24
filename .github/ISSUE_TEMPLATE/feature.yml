@@ -1,0 +1,31 @@
+name: Historia de usuario
+description: Nueva funcionalidad del backlog
+labels: ["type: feature"]
+body:
+  - type: input
+    id: requirement
+    attributes:
+      label: Código de requisito
+      placeholder: RF-01
+  - type: textarea
+    id: story
+    attributes:
+      label: Historia de usuario
+      value: |
+        Como <rol>,
+        quiero <acción>,
+        para <beneficio>.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterios de aceptación
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Prioridad (MoSCoW)
+      options: [Must, Should, Could, Won't]

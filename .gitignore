@@ -1,0 +1,42 @@
+# --- OS / IDE ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# --- Environment ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+.ipynb_checkpoints/
+
+# --- Node ---
+node_modules/
+dist/
+build/
+coverage/
+*.log
+.vite/
+
+# --- ML artifacts (generated) ---
+services/ml/models/*.joblib
+services/ml/models/*.pkl
+services/ml/data/raw/
+services/ml/data/processed/
+
+# --- Docker ---
+docker-data/
