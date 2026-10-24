@@ -14,6 +14,7 @@ from app.domain import (
     AttendanceStatus,
     BehaviorRecord,
     Classroom,
+    Commitment,
     CourseAssignment,
     FamilySurvey,
     Grade,
@@ -250,6 +251,32 @@ def ensure_surveys(db: Session, institution: Institution, users: dict[str, User]
     return True
 
 
+def ensure_commitments(db: Session, users: dict[str, User]) -> bool:
+    parent = users["padre@edutrack.dev"]
+    child = db.scalar(
+        select(Student)
+        .join(Guardianship, Guardianship.student_id == Student.id)
+        .where(Guardianship.guardian_id == parent.id)
+    )
+    if child is None or db.scalar(select(Commitment.id).where(Commitment.student_id == child.id)):
+        return False
+
+    db.add(
+        Commitment(
+            student_id=child.id,
+            tutor_id=child.classroom.tutor_id or users["docente@edutrack.dev"].id,
+            guardian_id=parent.id,
+            meeting_date=date(YEAR, 6, 12),
+            agreements=(
+                "La familia supervisará 1 hora diaria de estudio y revisará la agenda. "
+                "El tutor enviará un reporte quincenal de avance en Matemática."
+            ),
+            follow_up_date=date(YEAR, 7, 10),
+        )
+    )
+    return True
+
+
 def main() -> None:
     with SessionLocal() as db:
         institution = get_or_create_institution(db)
@@ -258,12 +285,14 @@ def main() -> None:
         db.flush()
         attendance_created = ensure_attendance(db, institution)
         surveys_created = ensure_surveys(db, institution, users)
+        commitments_created = ensure_commitments(db, users)
         db.commit()
 
     print(f"Demo users ready ({len(DEMO_USERS)}), password {DEMO_PASSWORD!r}.")
     print("Academic data created." if created else "Academic data already exists.")
     print("Attendance created." if attendance_created else "Attendance already exists.")
     print("Surveys created." if surveys_created else "Surveys already exist.")
+    print("Commitments created." if commitments_created else "Commitments already exist.")
 
 
 if __name__ == "__main__":
