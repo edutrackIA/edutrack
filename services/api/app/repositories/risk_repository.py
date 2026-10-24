@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain import RiskAssessment, RiskThreshold
+from app.domain import AcademicPeriod, RiskAssessment, RiskThreshold, Student
 from app.domain.risk import DEFAULT_HIGH_FROM, DEFAULT_MEDIUM_FROM
 
 
@@ -61,3 +61,31 @@ class RiskRepository:
         for assessment in self.db.scalars(query):
             latest[assessment.student_id] = assessment
         return latest
+
+    def latest_for_period(
+        self, student_ids: list[int], period_id: int
+    ) -> dict[int, RiskAssessment]:
+        if not student_ids:
+            return {}
+        query = (
+            select(RiskAssessment)
+            .where(
+                RiskAssessment.student_id.in_(student_ids),
+                RiskAssessment.period_id == period_id,
+            )
+            .order_by(RiskAssessment.created_at, RiskAssessment.id)
+        )
+        latest: dict[int, RiskAssessment] = {}
+        for assessment in self.db.scalars(query):
+            latest[assessment.student_id] = assessment
+        return latest
+
+    def latest_evaluated_period(self, institution_id: int) -> AcademicPeriod | None:
+        return self.db.scalar(
+            select(AcademicPeriod)
+            .join(RiskAssessment, RiskAssessment.period_id == AcademicPeriod.id)
+            .join(Student, Student.id == RiskAssessment.student_id)
+            .where(Student.institution_id == institution_id)
+            .order_by(AcademicPeriod.start_date.desc())
+            .limit(1)
+        )
