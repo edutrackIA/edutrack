@@ -9,6 +9,7 @@ from app.domain.enums import (
     ImportKind,
     ImportStatus,
     ParentEducation,
+    RecommendationStatus,
     RiskLevel,
     Role,
     Sex,
@@ -17,6 +18,7 @@ from app.domain.family_survey import FamilySurvey
 from app.domain.grade import BehaviorRecord, Grade
 from app.domain.import_job import ImportJob
 from app.domain.institution import Institution
+from app.domain.recommendation import Alert, Recommendation
 from app.domain.refresh_token import RefreshToken
 from app.domain.risk import RiskAssessment, RiskThreshold
 from app.domain.student import Guardianship, Student
@@ -25,6 +27,7 @@ from app.domain.user import User
 
 __all__ = [
     "AcademicPeriod",
+    "Alert",
     "Attendance",
     "AttendanceStatus",
     "BehaviorRecord",
@@ -40,6 +43,8 @@ __all__ = [
     "ImportStatus",
     "Institution",
     "ParentEducation",
+    "Recommendation",
+    "RecommendationStatus",
     "RefreshToken",
     "RiskAssessment",
     "RiskLevel",

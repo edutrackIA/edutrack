@@ -6,6 +6,7 @@ from app.api.routes import (
     commitments,
     health,
     imports,
+    recommendations,
     risk,
     settings,
     students,
@@ -19,4 +20,5 @@ api_router.include_router(students.router)
 api_router.include_router(commitments.router)
 api_router.include_router(imports.router)
 api_router.include_router(risk.router)
+api_router.include_router(recommendations.router)
 api_router.include_router(settings.router)

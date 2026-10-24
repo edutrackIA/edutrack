@@ -9,6 +9,7 @@ from app.repositories.risk_repository import RiskRepository
 from app.repositories.student_repository import StudentRepository
 from app.schemas.risk import RiskThresholds, RunRiskResponse, SkippedStudent
 from app.services.access_policy import AccessPolicy
+from app.services.recommendation_service import RecommendationService
 from app.services.risk.features import FeatureBuilder
 from app.services.risk.ml_client import MlClient
 
@@ -22,6 +23,7 @@ class RiskService:
         self.students = StudentRepository(db)
         self.features = FeatureBuilder(db)
         self.policy = AccessPolicy(db)
+        self.recommendations = RecommendationService(db)
 
     def run(
         self, user: User, ml: MlClient, *, period_id: int, classroom_id: int | None = None
@@ -36,7 +38,11 @@ class RiskService:
 
         requests: list[dict] = []
         skipped: list[SkippedStudent] = []
-        for student in self.students.list_for_institution(user.institution_id, classroom_id):
+        students = {
+            student.id: student
+            for student in self.students.list_for_institution(user.institution_id, classroom_id)
+        }
+        for student in students.values():
             result = self.features.build(student, period)
             if result.features is None:
                 skipped.append(SkippedStudent(student_id=student.id, reason=result.missing or ""))
@@ -57,7 +63,8 @@ class RiskService:
         thresholds = self.risk.get_thresholds(user.institution_id)
         for prediction in predictions:
             level = thresholds.classify(prediction["probability"])
-            self._save(prediction, period.id, version, level)
+            assessment = self._save(prediction, period.id, version, level)
+            self.recommendations.refresh_for(students[prediction["student_id"]], assessment)
             by_level[level] += 1
 
         self.db.commit()
@@ -97,12 +104,14 @@ class RiskService:
         self.db.commit()
         return thresholds
 
-    def _save(self, prediction: dict, period_id: int, version: str, level: RiskLevel) -> None:
+    def _save(
+        self, prediction: dict, period_id: int, version: str, level: RiskLevel
+    ) -> RiskAssessment:
         existing = self.risk.get_assessment(
             student_id=prediction["student_id"], period_id=period_id, model_version=version
         )
         if existing is None:
-            self.risk.add_assessment(
+            return self.risk.add_assessment(
                 RiskAssessment(
                     student_id=prediction["student_id"],
                     period_id=period_id,
@@ -112,8 +121,9 @@ class RiskService:
                     top_factors=prediction["top_factors"],
                 )
             )
-        else:
-            existing.probability = prediction["probability"]
-            existing.level = level
-            existing.top_factors = prediction["top_factors"]
-            existing.created_at = utcnow()
+        existing.probability = prediction["probability"]
+        existing.level = level
+        existing.top_factors = prediction["top_factors"]
+        existing.created_at = utcnow()
+        self.db.flush()
+        return existing

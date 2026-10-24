@@ -5,7 +5,8 @@ os.environ["API_JWT_SECRET"] = "test-secret-key-that-is-at-least-32-bytes-long"
 
 from collections.abc import Callable, Iterator  # noqa: E402
 from dataclasses import dataclass  # noqa: E402
-from datetime import date  # noqa: E402
+from datetime import date, timedelta  # noqa: E402
+from typing import Any  # noqa: E402
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -17,10 +18,15 @@ from app.core.database import Base, get_db  # noqa: E402
 from app.core.security import create_access_token, hash_password  # noqa: E402
 from app.domain import (  # noqa: E402
     AcademicPeriod,
+    Attendance,
+    AttendanceStatus,
     Classroom,
     CourseAssignment,
+    FamilySurvey,
+    Grade,
     Guardianship,
     Institution,
+    ParentEducation,
     Role,
     Sex,
     Student,
@@ -28,6 +34,7 @@ from app.domain import (  # noqa: E402
     User,
 )
 from app.main import app  # noqa: E402
+from app.services.risk.ml_client import get_ml_client  # noqa: E402
 
 DEFAULT_PASSWORD = "Secret123!"
 
@@ -225,3 +232,104 @@ def auth(user: User) -> dict[str, str]:
         user_id=user.id, role=user.role.value, institution_id=user.institution_id
     )
     return {"Authorization": f"Bearer {token}"}
+
+
+# --- Riesgo ----------------------------------------------------------------
+
+
+class FakeMlClient:
+    """Deterministic stand-in for the ML service: lower averages mean higher risk."""
+
+    version = "rf-test"
+
+    def __init__(self) -> None:
+        self.calls: list[list[dict[str, Any]]] = []
+
+    def predict_batch(self, items: list[dict[str, Any]]) -> tuple[str, list[dict[str, Any]]]:
+        self.calls.append(items)
+        predictions = []
+        for item in items:
+            average = item["features"]["avg_score"]
+            probability = round(max(0.0, min(1.0, (16 - average) / 8)), 4)
+            predictions.append(
+                {
+                    "student_id": item["student_id"],
+                    "probability": probability,
+                    "model_version": self.version,
+                    "top_factors": [
+                        {"feature": "avg_score", "value": average, "contribution": 0.3}
+                    ],
+                }
+            )
+        return self.version, predictions
+
+
+@pytest.fixture
+def fake_ml() -> Iterator[FakeMlClient]:
+    fake = FakeMlClient()
+    app.dependency_overrides[get_ml_client] = lambda: fake
+    yield fake
+    app.dependency_overrides.pop(get_ml_client, None)
+
+
+def add_records(
+    db: Session,
+    school: School,
+    student: Student,
+    scores: list[float],
+    *,
+    absences: int = 0,
+    lates: int = 0,
+    survey: bool = True,
+    period: AcademicPeriod | None = None,
+) -> None:
+    period = period or school.period
+    subjects = [school.math, school.language]
+    for subject, score in zip(subjects, scores, strict=False):
+        db.add(
+            Grade(student_id=student.id, subject_id=subject.id, period_id=period.id, score=score)
+        )
+    statuses = (
+        [AttendanceStatus.ABSENT] * absences
+        + [AttendanceStatus.LATE] * lates
+        + [AttendanceStatus.PRESENT] * (10 - absences - lates)
+    )
+    db.add_all(
+        Attendance(student_id=student.id, date=period.start_date + timedelta(days=i), status=s)
+        for i, s in enumerate(statuses)
+    )
+    if survey:
+        db.add(
+            FamilySurvey(
+                student_id=student.id,
+                period_id=period.id,
+                responder_id=school.analyst.id,
+                study_hours_week=6,
+                parent_education=ParentEducation.SECONDARY,
+                home_internet=True,
+                has_study_device=False,
+                family_communication=3,
+                student_works=False,
+                household_size=5,
+            )
+        )
+    db.commit()
+
+
+@pytest.fixture
+def evaluated_school(school: School, db_session: Session) -> School:
+    add_records(db_session, school, school.student_a, [8, 10], absences=3, lates=1)  # high
+    add_records(db_session, school, school.student_a2, [17, 18])  # low
+    add_records(db_session, school, school.student_b, [12, 13], survey=False)  # skipped
+    return school
+
+
+@pytest.fixture
+def assessed_school(client: TestClient, evaluated_school: School, fake_ml: FakeMlClient) -> School:
+    school = evaluated_school
+    client.post(
+        "/api/v1/risk-assessments/run",
+        json={"period_id": school.period.id},
+        headers=auth(school.analyst),
+    )
+    return school

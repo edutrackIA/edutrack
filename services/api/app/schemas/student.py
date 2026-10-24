@@ -102,3 +102,4 @@ class StudentSummary(BaseModel):
     attendance_rate: float | None
     grades: list[GradeResponse]
     parent_suggestions: list[str]
+    disclaimer: str | None = None

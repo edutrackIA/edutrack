@@ -23,6 +23,11 @@ class AccessPolicy:
             return self.classrooms.teacher_classroom_ids(user.id)
         return set()
 
+    def tutored_ids(self, user: User) -> set[int]:
+        if user.role != Role.TEACHER:
+            return set()
+        return self.classrooms.tutored_classroom_ids(user.id)
+
     def ensure_can_view_classroom(self, user: User, classroom: Classroom) -> None:
         self._ensure_same_institution(user, classroom.institution_id, "Classroom")
         visible = self.visible_classroom_ids(user)
