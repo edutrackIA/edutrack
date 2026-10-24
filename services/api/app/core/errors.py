@@ -28,6 +28,16 @@ class NotFoundError(AppError):
     code = "NOT_FOUND"
 
 
+class PayloadTooLargeError(AppError):
+    status_code = 413
+    code = "FILE_TOO_LARGE"
+
+
+class UnsupportedMediaTypeError(AppError):
+    status_code = 415
+    code = "UNSUPPORTED_FILE_TYPE"
+
+
 class UnprocessableError(AppError):
     status_code = 422
     code = "VALIDATION_ERROR"

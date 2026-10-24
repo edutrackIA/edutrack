@@ -26,6 +26,16 @@ class ClassroomRepository:
             query = query.where(Classroom.id.in_(ids))
         return list(self.db.scalars(query))
 
+    def find(self, *, institution_id: int, year: int, grade: int, section: str) -> Classroom | None:
+        return self.db.scalar(
+            select(Classroom).where(
+                Classroom.institution_id == institution_id,
+                Classroom.year == year,
+                Classroom.grade == grade,
+                Classroom.section == section,
+            )
+        )
+
     def teacher_classroom_ids(self, teacher_id: int) -> set[int]:
         tutored = select(Classroom.id).where(Classroom.tutor_id == teacher_id)
         assigned = select(CourseAssignment.classroom_id).where(

@@ -1,7 +1,9 @@
-from sqlalchemy import select
+from datetime import date
+
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.domain import AcademicPeriod, BehaviorRecord, Grade, Subject
+from app.domain import AcademicPeriod, Attendance, BehaviorRecord, Grade, Subject
 
 
 class AcademicRepository:
@@ -13,6 +15,9 @@ class AcademicRepository:
 
     def get_subject(self, subject_id: int) -> Subject | None:
         return self.db.get(Subject, subject_id)
+
+    def get_subject_by_name(self, name: str) -> Subject | None:
+        return self.db.scalar(select(Subject).where(func.lower(Subject.name) == name.lower()))
 
     def list_grades(self, student_id: int, period_id: int | None = None) -> list[Grade]:
         query = (
@@ -42,6 +47,11 @@ class AcademicRepository:
             )
         )
 
-    def add(self, entity: Grade | BehaviorRecord) -> None:
+    def get_attendance(self, *, student_id: int, day: date) -> Attendance | None:
+        return self.db.scalar(
+            select(Attendance).where(Attendance.student_id == student_id, Attendance.date == day)
+        )
+
+    def add(self, entity: Grade | BehaviorRecord | Attendance) -> None:
         self.db.add(entity)
         self.db.flush()

@@ -1,7 +1,7 @@
 """Create demo data for local development. Safe to run more than once."""
 
 import random
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -10,6 +10,8 @@ from app.core.database import SessionLocal
 from app.core.security import hash_password
 from app.domain import (
     AcademicPeriod,
+    Attendance,
+    AttendanceStatus,
     BehaviorRecord,
     Classroom,
     CourseAssignment,
@@ -171,15 +173,58 @@ def ensure_academic_data(db: Session, institution: Institution, users: dict[str,
     return True
 
 
+def ensure_attendance(db: Session, institution: Institution) -> bool:
+    exists = db.scalar(
+        select(Attendance.id)
+        .join(Student, Student.id == Attendance.student_id)
+        .where(Student.institution_id == institution.id)
+        .limit(1)
+    )
+    if exists:
+        return False
+
+    students = db.scalars(select(Student).where(Student.institution_id == institution.id)).all()
+    periods = db.scalars(
+        select(AcademicPeriod)
+        .where(AcademicPeriod.institution_id == institution.id, AcademicPeriod.bimester <= 3)
+        .order_by(AcademicPeriod.bimester)
+    ).all()
+    school_days = [
+        period.start_date + timedelta(days=offset)
+        for period in periods
+        for offset in range((period.end_date - period.start_date).days + 1)
+        if (period.start_date + timedelta(days=offset)).weekday() < 5
+    ]
+
+    rng = random.Random(7)
+    statuses = [
+        AttendanceStatus.PRESENT,
+        AttendanceStatus.ABSENT,
+        AttendanceStatus.LATE,
+        AttendanceStatus.JUSTIFIED,
+    ]
+    for student in students:
+        absence_rate = rng.choice([0.02, 0.04, 0.06, 0.12, 0.2])
+        weights = [1 - absence_rate * 1.5, absence_rate, absence_rate * 0.3, absence_rate * 0.2]
+        db.add_all(
+            Attendance(student_id=student.id, date=day, status=rng.choices(statuses, weights)[0])
+            for day in school_days
+        )
+    return True
+
+
 def main() -> None:
     with SessionLocal() as db:
         institution = get_or_create_institution(db)
         users = ensure_users(db, institution)
         created = ensure_academic_data(db, institution, users)
+        db.flush()
+        attendance_created = ensure_attendance(db, institution)
         db.commit()
 
     print(f"Demo users ready ({len(DEMO_USERS)}), password {DEMO_PASSWORD!r}.")
     print("Academic data created." if created else "Academic data already exists.")
+    print("Attendance created." if attendance_created else "Attendance already exists.")
 
 
 if __name__ == "__main__":

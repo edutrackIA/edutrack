@@ -11,6 +11,14 @@ class StudentRepository:
     def get(self, student_id: int) -> Student | None:
         return self.db.get(Student, student_id)
 
+    def get_by_code(self, code: str) -> Student | None:
+        return self.db.scalar(select(Student).where(Student.code == code))
+
+    def add(self, student: Student) -> Student:
+        self.db.add(student)
+        self.db.flush()
+        return student
+
     def list_for_guardian(self, guardian_id: int) -> list[Student]:
         query = (
             select(Student)
