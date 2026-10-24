@@ -6,3 +6,8 @@ class Role(StrEnum):
     TEACHER = "TEACHER"
     PARENT = "PARENT"
     ANALYST = "ANALYST"
+
+
+class Sex(StrEnum):
+    M = "M"
+    F = "F"
