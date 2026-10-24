@@ -2,11 +2,12 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import JSON, BigInteger, Enum, Float, ForeignKey, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.core.time import utcnow
 from app.domain.enums import RiskLevel
+from app.domain.student import Student
 from app.domain.types import BigIntPK
 
 DEFAULT_MEDIUM_FROM = 0.40
@@ -46,3 +47,5 @@ class RiskAssessment(Base):
     model_version: Mapped[str] = mapped_column(String(50))
     top_factors: Mapped[list[dict[str, Any]]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+    student: Mapped[Student] = relationship()
