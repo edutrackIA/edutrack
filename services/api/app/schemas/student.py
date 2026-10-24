@@ -2,9 +2,10 @@ from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.domain import BehaviorRecord, Grade, Student
+from app.domain import BehaviorRecord, Grade, RiskAssessment, Student
 from app.domain.enums import Sex
 from app.schemas.auth import UserResponse
+from app.schemas.risk import RiskAssessmentResponse
 
 
 class StudentListItem(BaseModel):
@@ -16,12 +17,14 @@ class StudentListItem(BaseModel):
     probability: float | None = None
 
     @classmethod
-    def from_model(cls, student: Student) -> "StudentListItem":
+    def from_model(cls, student: Student, risk: RiskAssessment | None = None) -> "StudentListItem":
         return cls(
             id=student.id,
             code=student.code,
             full_name=student.full_name,
             classroom=student.classroom.label,
+            risk_level=risk.level.value if risk else None,
+            probability=risk.probability if risk else None,
         )
 
 
@@ -36,7 +39,14 @@ class StudentResponse(BaseModel):
     sex: Sex
     classroom_id: int
     guardians: list[UserResponse]
-    latest_risk: None = None
+    latest_risk: RiskAssessmentResponse | None = None
+
+    @classmethod
+    def from_model(cls, student: Student, risk: RiskAssessment | None = None) -> "StudentResponse":
+        response = cls.model_validate(student)
+        if risk is not None:
+            response.latest_risk = RiskAssessmentResponse.from_model(risk)
+        return response
 
 
 class StudentUpdate(BaseModel):

@@ -1,6 +1,15 @@
 from fastapi import APIRouter
 
-from app.api.routes import auth, classrooms, commitments, health, imports, students
+from app.api.routes import (
+    auth,
+    classrooms,
+    commitments,
+    health,
+    imports,
+    risk,
+    settings,
+    students,
+)
 
 api_router = APIRouter()
 api_router.include_router(health.router)
@@ -9,3 +18,5 @@ api_router.include_router(classrooms.router)
 api_router.include_router(students.router)
 api_router.include_router(commitments.router)
 api_router.include_router(imports.router)
+api_router.include_router(risk.router)
+api_router.include_router(settings.router)

@@ -42,6 +42,17 @@ class AccessPolicy:
             return
         raise self._forbidden()
 
+    def ensure_can_view_risk(self, user: User, student: Student) -> None:
+        """Families get recommendations, never risk levels or probabilities."""
+        if user.role == Role.PARENT:
+            self._ensure_same_institution(user, student.institution_id, "Student")
+            raise self._forbidden()
+        self.ensure_can_view_student(user, student)
+
+    @staticmethod
+    def can_see_risk(user: User) -> bool:
+        return user.role != Role.PARENT
+
     def ensure_can_edit_student(self, user: User, student: Student) -> None:
         self._ensure_same_institution(user, student.institution_id, "Student")
         if user.role not in STAFF_WITH_FULL_ACCESS:

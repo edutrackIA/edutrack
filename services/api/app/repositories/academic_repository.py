@@ -43,6 +43,31 @@ class AcademicRepository:
         )
         return {status: count for status, count in rows}
 
+    def previous_period(self, period: AcademicPeriod) -> AcademicPeriod | None:
+        return self.db.scalar(
+            select(AcademicPeriod)
+            .where(
+                AcademicPeriod.institution_id == period.institution_id,
+                AcademicPeriod.start_date < period.start_date,
+            )
+            .order_by(AcademicPeriod.start_date.desc())
+            .limit(1)
+        )
+
+    def latest_behavior_until(
+        self, student_id: int, period: AcademicPeriod
+    ) -> BehaviorRecord | None:
+        return self.db.scalar(
+            select(BehaviorRecord)
+            .join(AcademicPeriod, AcademicPeriod.id == BehaviorRecord.period_id)
+            .where(
+                BehaviorRecord.student_id == student_id,
+                AcademicPeriod.start_date <= period.start_date,
+            )
+            .order_by(AcademicPeriod.start_date.desc())
+            .limit(1)
+        )
+
     def get_subject(self, subject_id: int) -> Subject | None:
         return self.db.get(Subject, subject_id)
 

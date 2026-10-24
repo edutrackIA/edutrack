@@ -19,6 +19,14 @@ class StudentRepository:
         self.db.flush()
         return student
 
+    def list_for_institution(
+        self, institution_id: int, classroom_id: int | None = None
+    ) -> list[Student]:
+        query = select(Student).where(Student.institution_id == institution_id)
+        if classroom_id is not None:
+            query = query.where(Student.classroom_id == classroom_id)
+        return list(self.db.scalars(query.order_by(Student.id)))
+
     def list_for_guardian(self, guardian_id: int) -> list[Student]:
         query = (
             select(Student)

@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain import FamilySurvey
+from app.domain import AcademicPeriod, FamilySurvey
 
 
 class SurveyRepository:
@@ -13,6 +13,18 @@ class SurveyRepository:
             select(FamilySurvey).where(
                 FamilySurvey.student_id == student_id, FamilySurvey.period_id == period_id
             )
+        )
+
+    def latest_until(self, student_id: int, period: AcademicPeriod) -> FamilySurvey | None:
+        return self.db.scalar(
+            select(FamilySurvey)
+            .join(AcademicPeriod, AcademicPeriod.id == FamilySurvey.period_id)
+            .where(
+                FamilySurvey.student_id == student_id,
+                AcademicPeriod.start_date <= period.start_date,
+            )
+            .order_by(AcademicPeriod.start_date.desc())
+            .limit(1)
         )
 
     def list_for_student(self, student_id: int) -> list[FamilySurvey]:
