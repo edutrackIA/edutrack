@@ -11,11 +11,13 @@ from app.schemas.recommendation import (
     RecommendationItemsUpdate,
     RecommendationResponse,
 )
+from app.services.notifications.email_sender import EmailSender, get_email_sender
 from app.services.recommendation_service import RecommendationService
 
 router = APIRouter(tags=["recommendations"])
 
 ReviewerUser = Annotated[User, Depends(require_roles(Role.DIRECTOR, Role.TEACHER))]
+Sender = Annotated[EmailSender, Depends(get_email_sender)]
 
 
 @router.get("/recommendations", response_model=list[RecommendationResponse])
@@ -46,9 +48,17 @@ def edit_recommendation(
 
 @router.post("/recommendations/{recommendation_id}/approve", response_model=RecommendationResponse)
 def approve_recommendation(
-    recommendation_id: int, user: ReviewerUser, db: DbSession
+    recommendation_id: int, user: ReviewerUser, db: DbSession, sender: Sender
 ) -> RecommendationResponse:
-    item = RecommendationService(db).approve(user, recommendation_id)
+    item = RecommendationService(db).approve(user, recommendation_id, sender)
+    return RecommendationResponse.from_model(item)
+
+
+@router.post("/recommendations/{recommendation_id}/send", response_model=RecommendationResponse)
+def send_recommendation(
+    recommendation_id: int, user: ReviewerUser, db: DbSession, sender: Sender
+) -> RecommendationResponse:
+    item = RecommendationService(db).resend(user, recommendation_id, sender)
     return RecommendationResponse.from_model(item)
 
 
