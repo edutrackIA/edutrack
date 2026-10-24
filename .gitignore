@@ -35,8 +35,10 @@ coverage/
 # --- ML artifacts (generated) ---
 services/ml/models/*.joblib
 services/ml/models/*.pkl
+services/ml/models/*.json
 services/ml/data/raw/
 services/ml/data/processed/
+services/ml/data/synthetic/*.csv
 
 # --- Docker ---
 docker-data/
