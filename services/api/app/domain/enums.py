@@ -38,3 +38,9 @@ class ParentEducation(StrEnum):
     SECONDARY = "SECONDARY"
     TECHNICAL = "TECHNICAL"
     UNIVERSITY = "UNIVERSITY"
+
+
+class CommitmentStatus(StrEnum):
+    OPEN = "OPEN"
+    FULFILLED = "FULFILLED"
+    BREACHED = "BREACHED"
