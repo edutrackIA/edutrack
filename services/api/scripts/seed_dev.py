@@ -15,9 +15,11 @@ from app.domain import (
     BehaviorRecord,
     Classroom,
     CourseAssignment,
+    FamilySurvey,
     Grade,
     Guardianship,
     Institution,
+    ParentEducation,
     Role,
     Sex,
     Student,
@@ -213,6 +215,41 @@ def ensure_attendance(db: Session, institution: Institution) -> bool:
     return True
 
 
+def ensure_surveys(db: Session, institution: Institution, users: dict[str, User]) -> bool:
+    students = db.scalars(
+        select(Student).where(Student.institution_id == institution.id).order_by(Student.code)
+    ).all()
+    first_period = db.scalar(
+        select(AcademicPeriod).where(
+            AcademicPeriod.institution_id == institution.id, AcademicPeriod.bimester == 1
+        )
+    )
+    if not students or first_period is None:
+        return False
+    if db.scalar(select(FamilySurvey.id).where(FamilySurvey.student_id == students[0].id)):
+        return False
+
+    rng = random.Random(11)
+    parent = users["padre@edutrack.dev"]
+    analyst = users["analista@edutrack.dev"]
+    for index, student in enumerate(students):
+        db.add(
+            FamilySurvey(
+                student_id=student.id,
+                period_id=first_period.id,
+                responder_id=parent.id if index == 0 else analyst.id,
+                study_hours_week=rng.randint(2, 20),
+                parent_education=rng.choice(list(ParentEducation)),
+                home_internet=rng.random() < 0.8,
+                has_study_device=rng.random() < 0.75,
+                family_communication=rng.randint(1, 5),
+                student_works=rng.random() < 0.1,
+                household_size=rng.randint(2, 8),
+            )
+        )
+    return True
+
+
 def main() -> None:
     with SessionLocal() as db:
         institution = get_or_create_institution(db)
@@ -220,11 +257,13 @@ def main() -> None:
         created = ensure_academic_data(db, institution, users)
         db.flush()
         attendance_created = ensure_attendance(db, institution)
+        surveys_created = ensure_surveys(db, institution, users)
         db.commit()
 
     print(f"Demo users ready ({len(DEMO_USERS)}), password {DEMO_PASSWORD!r}.")
     print("Academic data created." if created else "Academic data already exists.")
     print("Attendance created." if attendance_created else "Attendance already exists.")
+    print("Surveys created." if surveys_created else "Surveys already exist.")
 
 
 if __name__ == "__main__":

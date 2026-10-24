@@ -1,11 +1,18 @@
 from sqlalchemy.orm import Session
 
 from app.core.errors import NotFoundError, UnprocessableError
-from app.domain import AcademicPeriod, BehaviorRecord, Grade, Student, User
+from app.domain import AcademicPeriod, AttendanceStatus, BehaviorRecord, Grade, Student, User
 from app.repositories.academic_repository import AcademicRepository
 from app.repositories.classroom_repository import ClassroomRepository
 from app.repositories.student_repository import StudentRepository
-from app.schemas.student import BehaviorInput, GradeInput, StudentUpdate
+from app.schemas.student import (
+    BehaviorInput,
+    GradeInput,
+    GradeResponse,
+    StudentListItem,
+    StudentSummary,
+    StudentUpdate,
+)
 from app.services.access_policy import AccessPolicy
 
 
@@ -93,6 +100,33 @@ class StudentService:
 
         self.db.commit()
         return record
+
+    def summary(self, user: User, student_id: int, period_id: int | None) -> StudentSummary:
+        student = self.get(user, student_id)
+        if period_id is None:
+            period = self.academic.latest_period_with_grades(student.id)
+        else:
+            period = self._get_period(user, period_id)
+
+        grades: list[Grade] = []
+        attendance_rate: float | None = None
+        if period is not None:
+            grades = self.academic.list_grades(student.id, period.id)
+            counts = self.academic.attendance_counts(student.id, period.start_date, period.end_date)
+            total = sum(counts.values())
+            if total:
+                attended = total - counts.get(AttendanceStatus.ABSENT, 0)
+                attendance_rate = round(attended / total, 4)
+
+        average = round(sum(g.score for g in grades) / len(grades), 2) if grades else None
+        return StudentSummary(
+            student=StudentListItem.from_model(student),
+            period_id=period.id if period else None,
+            average_score=average,
+            attendance_rate=attendance_rate,
+            grades=[GradeResponse.from_model(grade) for grade in grades],
+            parent_suggestions=[],
+        )
 
     def list_children(self, user: User) -> list[Student]:
         return self.students.list_for_guardian(user.id)

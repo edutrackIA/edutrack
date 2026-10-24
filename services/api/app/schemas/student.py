@@ -83,3 +83,12 @@ class BehaviorResponse(BaseModel):
     @classmethod
     def from_model(cls, record: BehaviorRecord) -> "BehaviorResponse":
         return cls.model_validate(record)
+
+
+class StudentSummary(BaseModel):
+    student: StudentListItem
+    period_id: int | None
+    average_score: float | None
+    attendance_rate: float | None
+    grades: list[GradeResponse]
+    parent_suggestions: list[str]
