@@ -44,3 +44,9 @@ class CommitmentStatus(StrEnum):
     OPEN = "OPEN"
     FULFILLED = "FULFILLED"
     BREACHED = "BREACHED"
+
+
+class RiskLevel(StrEnum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
