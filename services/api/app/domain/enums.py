@@ -11,3 +11,22 @@ class Role(StrEnum):
 class Sex(StrEnum):
     M = "M"
     F = "F"
+
+
+class AttendanceStatus(StrEnum):
+    PRESENT = "PRESENT"
+    ABSENT = "ABSENT"
+    LATE = "LATE"
+    JUSTIFIED = "JUSTIFIED"
+
+
+class ImportKind(StrEnum):
+    STUDENTS = "STUDENTS"
+    GRADES = "GRADES"
+    ATTENDANCE = "ATTENDANCE"
+
+
+class ImportStatus(StrEnum):
+    PENDING = "PENDING"
+    DONE = "DONE"
+    FAILED = "FAILED"
