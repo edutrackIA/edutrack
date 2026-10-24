@@ -28,6 +28,11 @@ class NotFoundError(AppError):
     code = "NOT_FOUND"
 
 
+class UnprocessableError(AppError):
+    status_code = 422
+    code = "VALIDATION_ERROR"
+
+
 async def app_error_handler(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, AppError)
     headers = {"WWW-Authenticate": "Bearer"} if exc.status_code == 401 else None
