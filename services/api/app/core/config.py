@@ -19,6 +19,14 @@ class Settings(BaseSettings):
     refresh_token_ttl_days: int = 7
     bcrypt_rounds: int = 12
 
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_use_tls: bool = False
+    mail_from: str = "EduTrack <no-reply@edutrack.dev>"
+    portal_url: str = "http://localhost:5173"
+
 
 @lru_cache
 def get_settings() -> Settings:
