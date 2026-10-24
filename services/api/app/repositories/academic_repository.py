@@ -3,7 +3,14 @@ from datetime import date
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.domain import AcademicPeriod, Attendance, BehaviorRecord, Grade, Subject
+from app.domain import (
+    AcademicPeriod,
+    Attendance,
+    AttendanceStatus,
+    BehaviorRecord,
+    Grade,
+    Subject,
+)
 
 
 class AcademicRepository:
@@ -12,6 +19,29 @@ class AcademicRepository:
 
     def get_period(self, period_id: int) -> AcademicPeriod | None:
         return self.db.get(AcademicPeriod, period_id)
+
+    def latest_period_with_grades(self, student_id: int) -> AcademicPeriod | None:
+        return self.db.scalar(
+            select(AcademicPeriod)
+            .join(Grade, Grade.period_id == AcademicPeriod.id)
+            .where(Grade.student_id == student_id)
+            .order_by(AcademicPeriod.start_date.desc())
+            .limit(1)
+        )
+
+    def attendance_counts(
+        self, student_id: int, start: date, end: date
+    ) -> dict[AttendanceStatus, int]:
+        rows = self.db.execute(
+            select(Attendance.status, func.count())
+            .where(
+                Attendance.student_id == student_id,
+                Attendance.date >= start,
+                Attendance.date <= end,
+            )
+            .group_by(Attendance.status)
+        )
+        return {status: count for status, count in rows}
 
     def get_subject(self, subject_id: int) -> Subject | None:
         return self.db.get(Subject, subject_id)

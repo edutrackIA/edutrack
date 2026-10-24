@@ -65,6 +65,27 @@ class AccessPolicy:
             return
         raise self._forbidden()
 
+    def ensure_can_submit_survey(self, user: User, student: Student) -> None:
+        self._ensure_same_institution(user, student.institution_id, "Student")
+        if user.role == Role.ANALYST:
+            return
+        if user.role == Role.PARENT and self.students.is_guardian(
+            guardian_id=user.id, student_id=student.id
+        ):
+            return
+        raise self._forbidden()
+
+    def ensure_can_view_surveys(self, user: User, student: Student) -> None:
+        """Socio-family data is restricted: teachers only see the resulting risk."""
+        self._ensure_same_institution(user, student.institution_id, "Student")
+        if user.role in STAFF_WITH_FULL_ACCESS:
+            return
+        if user.role == Role.PARENT and self.students.is_guardian(
+            guardian_id=user.id, student_id=student.id
+        ):
+            return
+        raise self._forbidden()
+
     @staticmethod
     def _ensure_same_institution(user: User, institution_id: int, resource: str) -> None:
         # Records from other institutions are reported as missing, not forbidden,
