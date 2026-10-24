@@ -1,75 +1,53 @@
 # Arquitectura
 
-## Contexto del sistema
+Los diagramas siguen el modelo [C4](https://c4model.com/) y se generan con Structurizr a partir de [`workspace.dsl`](workspace.dsl). Ese archivo es la fuente versionada. Además de las vistas incluidas aquí, define los componentes del servicio ML, el flujo de predicción y los despliegues local y en AWS.
 
-```mermaid
-flowchart LR
-    director([Director])
-    teacher([Docente / Tutor])
-    parent([Padre de familia])
-    analyst([Analista])
+## Nivel 1: Contexto del sistema
 
-    edutrack[["EduTrack<br/>Seguimiento académico y alerta temprana"]]
+![Diagrama de contexto](images/SystemContext.png)
 
-    director -->|Consulta indicadores y reportes| edutrack
-    teacher -->|Registra notas y recibe alertas| edutrack
-    parent -->|Consulta el progreso y responde encuestas| edutrack
-    analyst -->|Importa datos, ejecuta modelo, ajusta umbrales| edutrack
-```
+## Nivel 2: Contenedores
 
-## Contenedores
-
-```mermaid
-flowchart TB
-    browser([Navegador])
-
-    subgraph edutrack [EduTrack]
-        web["Web App<br/><i>React · Vite · TS</i>"]
-        api["API principal<br/><i>FastAPI</i>"]
-        ml["Servicio ML<br/><i>FastAPI · scikit-learn</i>"]
-        db[("MySQL 8")]
-        model[/"Modelo entrenado<br/>(.joblib)"/]
-    end
-
-    browser -->|HTTPS| web
-    web -->|REST + JWT| api
-    api -->|SQLAlchemy| db
-    api -->|REST interno| ml
-    ml -->|carga al iniciar| model
-```
+![Diagrama de contenedores](images/Containers.png)
 
 | Contenedor | Responsabilidad |
 |---|---|
-| Web App | Interfaz por rol, dashboards con semáforos, formularios |
-| API principal | Autenticación, RBAC, dominio académico, ingesta, alertas, reportes |
-| Servicio ML | Inferencia del riesgo y explicación por factores |
-| MySQL | Persistencia relacional |
+| Single-Page App | Interfaz por rol, dashboards con semáforos y formularios |
+| Servidor web | Entrega la SPA y enruta `/api/v1` hacia la API principal |
+| API principal | Autenticación, RBAC, dominio académico, ingesta, alertas y reportes |
+| Servicio ML | Inferencia del riesgo y explicación por factores, sin estado |
+| Pipeline de entrenamiento | Dataset sintético, VIF, SMOTE, entrenamiento y evaluación del modelo |
+| Repositorio de modelos | Artefactos `.joblib` versionados con sus métricas |
+| Base de datos | Persistencia relacional en MySQL 8 |
+
+## Nivel 3: Componentes de la API principal
+
+![Componentes de la API principal](images/ApiComponents.png)
 
 ## Flujo de evaluación de riesgo
 
 ```mermaid
 sequenceDiagram
     actor A as Analista
-    participant W as Web
+    participant W as SPA
     participant API as API principal
     participant DB as MySQL
     participant ML as Servicio ML
+    participant M as Servicio de correo
 
     A->>W: Ejecutar evaluación (periodo, aula)
     W->>API: POST /api/v1/risk-assessments/run
-    API->>DB: Leer notas, asistencia, conducta y encuestas
-    API->>API: Construir vector de características
+    API->>DB: Leer notas, asistencia, conducta, encuestas y umbrales
+    API->>API: Construir vectores de características
     API->>ML: POST /v1/predict/batch
-    ML-->>API: probabilidad + factores principales
-    API->>DB: Leer umbrales de la institución
+    ML-->>API: Probabilidad y factores principales
     API->>API: Asignar nivel y generar sugerencias
-    API->>DB: Guardar evaluaciones y alertas
+    API->>DB: Guardar evaluaciones, sugerencias y alertas
+    API->>M: Notificar a tutores y padres
     API-->>W: Resumen de la ejecución
 ```
 
 ## Estructura interna de los servicios backend
-
-Ambos servicios siguen capas:
 
 ```
 app/
@@ -82,3 +60,8 @@ app/
 ```
 
 La dependencia va siempre hacia adentro: `api → services → domain`, y `services → repositories`.
+
+## Cómo regenerar los diagramas
+
+1. Pega el contenido de `workspace.dsl` en el editor DSL de Structurizr, o ejecuta Structurizr Lite en Docker apuntando a esta carpeta.
+2. Exporta cada vista como PNG con el nombre de la vista y reemplázala en `images/`.
