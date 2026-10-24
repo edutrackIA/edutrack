@@ -28,6 +28,26 @@ class NotFoundError(AppError):
     code = "NOT_FOUND"
 
 
+class ConflictError(AppError):
+    status_code = 409
+    code = "CONFLICT"
+
+
+class PayloadTooLargeError(AppError):
+    status_code = 413
+    code = "FILE_TOO_LARGE"
+
+
+class UnsupportedMediaTypeError(AppError):
+    status_code = 415
+    code = "UNSUPPORTED_FILE_TYPE"
+
+
+class UnprocessableError(AppError):
+    status_code = 422
+    code = "VALIDATION_ERROR"
+
+
 async def app_error_handler(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, AppError)
     headers = {"WWW-Authenticate": "Bearer"} if exc.status_code == 401 else None
