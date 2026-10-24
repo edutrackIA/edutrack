@@ -36,6 +36,9 @@ class ClassroomRepository:
             )
         )
 
+    def tutored_classroom_ids(self, teacher_id: int) -> set[int]:
+        return set(self.db.scalars(select(Classroom.id).where(Classroom.tutor_id == teacher_id)))
+
     def teacher_classroom_ids(self, teacher_id: int) -> set[int]:
         tutored = select(Classroom.id).where(Classroom.tutor_id == teacher_id)
         assigned = select(CourseAssignment.classroom_id).where(
