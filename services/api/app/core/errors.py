@@ -28,6 +28,11 @@ class NotFoundError(AppError):
     code = "NOT_FOUND"
 
 
+class BadGatewayError(AppError):
+    status_code = 502
+    code = "ML_SERVICE_UNAVAILABLE"
+
+
 class ConflictError(AppError):
     status_code = 409
     code = "CONFLICT"

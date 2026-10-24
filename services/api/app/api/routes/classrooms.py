@@ -3,10 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import DbSession, require_roles
-from app.domain import Role, User
+from app.domain import RiskLevel, Role, User
 from app.schemas.classroom import ClassroomResponse
 from app.schemas.student import StudentListItem
 from app.services.classroom_service import ClassroomService
+from app.services.risk_service import RiskService
 
 router = APIRouter(prefix="/classrooms", tags=["students"])
 
@@ -23,7 +24,14 @@ def list_classrooms(
 
 @router.get("/{classroom_id}/students", response_model=list[StudentListItem])
 def list_classroom_students(
-    classroom_id: int, user: StaffUser, db: DbSession
+    classroom_id: int,
+    user: StaffUser,
+    db: DbSession,
+    level: Annotated[RiskLevel | None, Query()] = None,
 ) -> list[StudentListItem]:
     students = ClassroomService(db).list_students(user, classroom_id)
-    return [StudentListItem.from_model(student) for student in students]
+    risks = RiskService(db).latest_for(user, students)
+    items = [StudentListItem.from_model(student, risks.get(student.id)) for student in students]
+    if level is not None:
+        items = [item for item in items if item.risk_level == level.value]
+    return items

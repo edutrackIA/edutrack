@@ -15,6 +15,7 @@ from app.schemas.student import (
     StudentUpdate,
 )
 from app.schemas.survey import FamilySurveyInput, FamilySurveyResponse
+from app.services.risk_service import RiskService
 from app.services.student_service import StudentService
 from app.services.survey_service import SurveyService
 
@@ -26,7 +27,8 @@ ParentUser = Annotated[User, Depends(require_roles(Role.PARENT))]
 @router.get("/students/{student_id}", response_model=StudentResponse)
 def get_student(student_id: int, user: CurrentUser, db: DbSession) -> StudentResponse:
     student = StudentService(db).get(user, student_id)
-    return StudentResponse.model_validate(student)
+    risk = RiskService(db).latest_for(user, [student]).get(student.id)
+    return StudentResponse.from_model(student, risk)
 
 
 @router.patch("/students/{student_id}", response_model=StudentResponse)
@@ -34,7 +36,8 @@ def update_student(
     student_id: int, body: StudentUpdate, user: CurrentUser, db: DbSession
 ) -> StudentResponse:
     student = StudentService(db).update(user, student_id, body)
-    return StudentResponse.model_validate(student)
+    risk = RiskService(db).latest_for(user, [student]).get(student.id)
+    return StudentResponse.from_model(student, risk)
 
 
 @router.get("/students/{student_id}/grades", response_model=list[GradeResponse])
