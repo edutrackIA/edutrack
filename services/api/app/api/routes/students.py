@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Depends, Query, status
 
 from app.api.deps import CurrentUser, DbSession, require_roles
 from app.domain import Role, User
@@ -11,9 +11,12 @@ from app.schemas.student import (
     GradeResponse,
     StudentListItem,
     StudentResponse,
+    StudentSummary,
     StudentUpdate,
 )
+from app.schemas.survey import FamilySurveyInput, FamilySurveyResponse
 from app.services.student_service import StudentService
+from app.services.survey_service import SurveyService
 
 router = APIRouter(tags=["students"])
 
@@ -62,6 +65,34 @@ def record_behavior(
 ) -> BehaviorResponse:
     record = StudentService(db).record_behavior(user, student_id, body)
     return BehaviorResponse.from_model(record)
+
+
+@router.get("/students/{student_id}/summary", response_model=StudentSummary)
+def get_student_summary(
+    student_id: int,
+    user: CurrentUser,
+    db: DbSession,
+    period_id: Annotated[int | None, Query()] = None,
+) -> StudentSummary:
+    return StudentService(db).summary(user, student_id, period_id)
+
+
+@router.post(
+    "/students/{student_id}/surveys",
+    status_code=status.HTTP_201_CREATED,
+    response_model=FamilySurveyResponse,
+)
+def submit_survey(
+    student_id: int, body: FamilySurveyInput, user: CurrentUser, db: DbSession
+) -> FamilySurveyResponse:
+    survey = SurveyService(db).submit(user, student_id, body)
+    return FamilySurveyResponse.model_validate(survey)
+
+
+@router.get("/students/{student_id}/surveys", response_model=list[FamilySurveyResponse])
+def list_surveys(student_id: int, user: CurrentUser, db: DbSession) -> list[FamilySurveyResponse]:
+    surveys = SurveyService(db).list_for_student(user, student_id)
+    return [FamilySurveyResponse.model_validate(survey) for survey in surveys]
 
 
 @router.get("/me/children", response_model=list[StudentListItem])
