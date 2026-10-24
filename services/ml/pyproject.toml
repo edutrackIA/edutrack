@@ -13,7 +13,7 @@ ignore = ["B008"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=app --cov-report=term-missing"
+addopts = "--cov=app --cov=training --cov-report=term-missing"
 
 [tool.coverage.run]
 branch = true
