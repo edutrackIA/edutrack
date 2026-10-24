@@ -75,6 +75,19 @@ docker compose exec api python -m scripts.seed_dev
 
 Todos usan la contraseña `Edutrack123!`.
 
+### Modelo de Machine Learning
+
+El modelo se entrena con un dataset sintético, aplicando VIF para la multicolinealidad, SMOTE solo dentro de los folds de entrenamiento y GridSearch sobre un Random Forest:
+
+```bash
+cd services/ml
+pip install -r requirements-dev.txt
+python -m training.train --export-dataset data/synthetic/dataset.csv
+docker compose restart ml
+```
+
+El comando muestra F1, ROC-AUC, precisión, recall y la matriz de confusión, y verifica el umbral de calidad (F1 ≥ 0.75 y ROC-AUC > 0.80). El modelo queda en `services/ml/models/`, y su versión y métricas se pueden consultar en `GET http://localhost:8001/v1/model`.
+
 Para levantar también el frontend compilado detrás de Nginx: `docker compose --profile full up --build` y abrir http://localhost:8080.
 
 ## Tests
