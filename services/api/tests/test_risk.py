@@ -1,6 +1,5 @@
 import json
-from collections.abc import Iterator
-from datetime import date, timedelta
+from datetime import date
 from typing import Any
 
 import httpx
@@ -13,113 +12,21 @@ from app.core.errors import BadGatewayError
 from app.domain import (
     AcademicPeriod,
     Attendance,
-    AttendanceStatus,
     BehaviorRecord,
-    FamilySurvey,
-    Grade,
-    ParentEducation,
     RiskAssessment,
-    Student,
 )
 from app.main import app
 from app.services.risk.features import FeatureBuilder
 from app.services.risk.ml_client import HttpMlClient, get_ml_client
-from tests.conftest import School, auth
+from tests.conftest import FakeMlClient, School, add_records, auth
 
 RUN_URL = "/api/v1/risk-assessments/run"
 THRESHOLDS_URL = "/api/v1/settings/risk-thresholds"
 
 
-class FakeMlClient:
-    """Deterministic stand-in for the ML service: lower averages mean higher risk."""
-
-    version = "rf-test"
-
-    def __init__(self) -> None:
-        self.calls: list[list[dict[str, Any]]] = []
-
-    def predict_batch(self, items: list[dict[str, Any]]) -> tuple[str, list[dict[str, Any]]]:
-        self.calls.append(items)
-        predictions = []
-        for item in items:
-            average = item["features"]["avg_score"]
-            probability = round(max(0.0, min(1.0, (16 - average) / 8)), 4)
-            predictions.append(
-                {
-                    "student_id": item["student_id"],
-                    "probability": probability,
-                    "model_version": self.version,
-                    "top_factors": [
-                        {"feature": "avg_score", "value": average, "contribution": 0.3}
-                    ],
-                }
-            )
-        return self.version, predictions
-
-
 class FailingMlClient:
     def predict_batch(self, items: list[dict[str, Any]]) -> tuple[str, list[dict[str, Any]]]:
         raise BadGatewayError("The ML service is not available")
-
-
-@pytest.fixture
-def fake_ml() -> Iterator[FakeMlClient]:
-    fake = FakeMlClient()
-    app.dependency_overrides[get_ml_client] = lambda: fake
-    yield fake
-    app.dependency_overrides.pop(get_ml_client, None)
-
-
-def add_records(
-    db: Session,
-    school: School,
-    student: Student,
-    scores: list[float],
-    *,
-    absences: int = 0,
-    lates: int = 0,
-    survey: bool = True,
-    period: AcademicPeriod | None = None,
-) -> None:
-    period = period or school.period
-    subjects = [school.math, school.language]
-    for subject, score in zip(subjects, scores, strict=False):
-        db.add(
-            Grade(student_id=student.id, subject_id=subject.id, period_id=period.id, score=score)
-        )
-    statuses = (
-        [AttendanceStatus.ABSENT] * absences
-        + [AttendanceStatus.LATE] * lates
-        + [AttendanceStatus.PRESENT] * (10 - absences - lates)
-    )
-    db.add_all(
-        Attendance(student_id=student.id, date=period.start_date + timedelta(days=i), status=s)
-        for i, s in enumerate(statuses)
-    )
-    if survey:
-        db.add(
-            FamilySurvey(
-                student_id=student.id,
-                period_id=period.id,
-                responder_id=school.analyst.id,
-                study_hours_week=6,
-                parent_education=ParentEducation.SECONDARY,
-                home_internet=True,
-                has_study_device=False,
-                family_communication=3,
-                student_works=False,
-                household_size=5,
-            )
-        )
-    db.commit()
-
-
-@pytest.fixture
-def evaluated_school(school: School, db_session: Session) -> School:
-    add_records(db_session, school, school.student_a, [8, 10], absences=3, lates=1)  # high
-    add_records(db_session, school, school.student_a2, [17, 18])  # low
-    add_records(db_session, school, school.student_b, [12, 13], survey=False)  # skipped
-    return school
 
 
 # --- Construcción de variables ---------------------------------------------
@@ -304,13 +211,6 @@ def test_run_reports_ml_service_errors(client: TestClient, evaluated_school: Sch
 
 
 # --- Visibilidad -----------------------------------------------------------
-
-
-@pytest.fixture
-def assessed_school(client: TestClient, evaluated_school: School, fake_ml: FakeMlClient) -> School:
-    school = evaluated_school
-    client.post(RUN_URL, json={"period_id": school.period.id}, headers=auth(school.analyst))
-    return school
 
 
 def test_staff_see_risk_in_student_record_and_lists(
