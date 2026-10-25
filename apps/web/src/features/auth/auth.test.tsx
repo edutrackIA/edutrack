@@ -33,6 +33,8 @@ describe('authentication', () => {
     mockApi({
       'POST /auth/login': () => json(TOKENS),
       'GET /auth/me': () => json(TEACHER),
+      'GET /classrooms': () => json([]),
+      'GET /alerts': () => json({ total: 0, items: [] }),
     })
     const router = renderApp('/login')
     const user = userEvent.setup()
@@ -41,7 +43,7 @@ describe('authentication', () => {
     await user.type(screen.getByLabelText('Contraseña'), 'Edutrack123!')
     await user.click(screen.getByRole('button', { name: 'Ingresar' }))
 
-    expect(await screen.findByRole('heading', { name: 'Aulas' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Mis aulas' })).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/aulas')
     expect(screen.getByRole('link', { name: 'Alertas' })).toBeInTheDocument()
     expect(screen.getByText('Luis Quispe')).toBeInTheDocument()
@@ -94,6 +96,8 @@ describe('authentication', () => {
     mockApi({
       'POST /auth/refresh': () => json(TOKENS),
       'GET /auth/me': () => json(TEACHER),
+      'GET /classrooms': () => json([]),
+      'GET /alerts': () => json({ total: 0, items: [] }),
       'POST /auth/logout': () => new Response(null, { status: 204 }),
     })
     const router = renderApp('/aulas')
@@ -109,18 +113,26 @@ describe('authentication', () => {
 describe('session safety', () => {
   it('reloads with a stored access token without rotating the refresh token', async () => {
     setTokens(TOKENS)
-    const fetchMock = mockApi({ 'GET /auth/me': () => json(TEACHER) })
+    const fetchMock = mockApi({
+      'GET /auth/me': () => json(TEACHER),
+      'GET /classrooms': () => json([]),
+      'GET /alerts': () => json({ total: 0, items: [] }),
+    })
 
     renderApp('/aulas')
 
-    expect(await screen.findByRole('heading', { name: 'Aulas' })).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(await screen.findByRole('heading', { name: 'Mis aulas' })).toBeInTheDocument()
+    const urls = fetchMock.mock.calls.map(([url]) => String(url))
+    expect(urls).toContain('/api/v1/auth/me')
+    expect(urls).not.toContain('/api/v1/auth/refresh')
   })
 
   it('ignores redirects to other sites after login', async () => {
     mockApi({
       'POST /auth/login': () => json(TOKENS),
       'GET /auth/me': () => json(TEACHER),
+      'GET /classrooms': () => json([]),
+      'GET /alerts': () => json({ total: 0, items: [] }),
     })
     const router = createMemoryRouter(routes, {
       initialEntries: [{ pathname: '/login', state: { from: '/\\evil.example' } }],
@@ -138,7 +150,7 @@ describe('session safety', () => {
     await user.type(screen.getByLabelText('Contraseña'), 'Edutrack123!')
     await user.click(screen.getByRole('button', { name: 'Ingresar' }))
 
-    expect(await screen.findByRole('heading', { name: 'Aulas' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Mis aulas' })).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/aulas')
   })
 })
