@@ -2,12 +2,18 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { messageFor } from '../../../shared/api/errors'
 import { formatDate } from '../../../shared/lib/format'
+import { byRiskThenName } from '../../../shared/lib/risk'
 import { EmptyState, ErrorMessage, LoadingState } from '../../../shared/ui/Feedback'
 import { PageHeader } from '../../../shared/ui/PageHeader'
 import { RiskBadge } from '../../../shared/ui/RiskBadge'
 import type { RecommendationStatus } from '../../students/types'
-import { useRecommendationQueue } from '../api'
+import { useRecommendationQueue, type ReviewItem } from '../api'
 import { RecommendationEditor } from '../components/RecommendationEditor'
+
+const byPriority = byRiskThenName<ReviewItem>(
+  (item) => item.student.risk_level,
+  (item) => item.student.full_name,
+)
 
 const TABS: { value: RecommendationStatus; label: string; empty: string }[] = [
   { value: 'PENDING_REVIEW', label: 'Por revisar', empty: 'No tienes recomendaciones por revisar' },
@@ -23,7 +29,7 @@ export default function RecommendationsPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
-  const items = queue.data ?? []
+  const items = [...(queue.data ?? [])].sort(byPriority)
   const selected = items.find((item) => item.id === selectedId) ?? items[0]
   const tab = TABS.find((item) => item.value === status)!
 

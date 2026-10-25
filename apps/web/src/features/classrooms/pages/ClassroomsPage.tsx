@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { messageFor } from '../../../shared/api/errors'
 import { formatPercent } from '../../../shared/lib/format'
-import { RISK_LABELS, type RiskLevel } from '../../../shared/lib/risk'
+import { byRiskThenName, RISK_LABELS, type RiskLevel } from '../../../shared/lib/risk'
 import { EmptyState, ErrorMessage, LoadingState } from '../../../shared/ui/Feedback'
 import { PageHeader } from '../../../shared/ui/PageHeader'
 import { RiskBadge } from '../../../shared/ui/RiskBadge'
@@ -16,6 +16,7 @@ import {
 } from '../../../shared/ui/Table'
 import { useAuth } from '../../auth/auth-context'
 import { StudentQuickView } from '../../students/components/StudentQuickView'
+import { useRecordLinkState } from '../../students/navigation'
 import type { StudentReference } from '../../students/types'
 import {
   classroomLabel,
@@ -27,10 +28,10 @@ import {
 
 const LEVEL_FILTERS: (RiskLevel | null)[] = [null, 'HIGH', 'MEDIUM', 'LOW']
 
-/** At-risk students first, then the rest; unevaluated students at the end. */
-function byRisk(a: ClassroomStudent, b: ClassroomStudent): number {
-  return (b.probability ?? -1) - (a.probability ?? -1) || a.full_name.localeCompare(b.full_name)
-}
+const byRisk = byRiskThenName<ClassroomStudent>(
+  (student) => student.risk_level,
+  (student) => student.full_name,
+)
 
 function ClassroomList({
   classrooms,
@@ -108,6 +109,7 @@ function StudentsPanel({ classroom }: { classroom: Classroom }) {
   const level = (searchParams.get('nivel') as RiskLevel | null) ?? null
   const students = useClassroomStudents(classroom.id, level)
   const [selected, setSelected] = useState<StudentReference | null>(null)
+  const linkState = useRecordLinkState()
 
   function changeLevel(next: RiskLevel | null) {
     const params = new URLSearchParams(searchParams)
@@ -182,6 +184,7 @@ function StudentsPanel({ classroom }: { classroom: Classroom }) {
                   <TableCell className="text-right">
                     <Link
                       to={`/estudiantes/${student.id}`}
+                      state={linkState}
                       className="text-sm font-bold text-accent hover:underline"
                     >
                       Ver ficha<span className="sr-only"> de {student.full_name}</span>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { messageFor } from '../../../shared/api/errors'
 import { formatDate, formatPercent } from '../../../shared/lib/format'
+import { byRiskThenName } from '../../../shared/lib/risk'
 import { Button } from '../../../shared/ui/Button'
 import { EmptyState, ErrorMessage, LoadingState } from '../../../shared/ui/Feedback'
 import { PageHeader } from '../../../shared/ui/PageHeader'
@@ -8,6 +9,11 @@ import { RiskBadge } from '../../../shared/ui/RiskBadge'
 import { StudentQuickView } from '../../students/components/StudentQuickView'
 import type { StudentReference } from '../../students/types'
 import { useAlerts, useMarkAlertRead, useUnreadAlertsCount, type Alert } from '../api'
+
+const byPriority = byRiskThenName<Alert>(
+  (alert) => alert.level,
+  (alert) => alert.student.full_name,
+)
 
 function AlertRow({
   alert,
@@ -68,7 +74,7 @@ export default function AlertsPage() {
   const alerts = useAlerts(unreadOnly)
   const unread = useUnreadAlertsCount(true)
   const [selected, setSelected] = useState<StudentReference | null>(null)
-  const items = alerts.data?.items ?? []
+  const items = [...(alerts.data?.items ?? [])].sort(byPriority)
 
   return (
     <div className="flex flex-col lg:h-full">
