@@ -17,6 +17,7 @@ function recommendation(id: number, name: string, status = 'PENDING_REVIEW', sen
     reviewed_at: null,
     sent_at: sentAt,
     created_at: '2026-10-25T00:08:35',
+    family_contacts: 1,
   }
 }
 
@@ -67,8 +68,27 @@ describe('RecommendationsPage', () => {
       await screen.findByRole('button', { name: 'Aprobar y enviar a la familia' }),
     )
 
-    expect(await screen.findByText(/El correo no se pudo enviar/)).toBeInTheDocument()
+    expect(await screen.findByText(/el correo no se pudo enviar/)).toBeInTheDocument()
     expect(calls).toEqual(['approve'])
+  })
+
+  it('warns when the student has no guardian with an email', async () => {
+    const noContact = { ...recommendation(1, 'Ramírez Gutiérrez, Lucía'), family_contacts: 0 }
+    mockApi({
+      'GET /recommendations': () => json([noContact]),
+      'POST /recommendations/1/approve': () =>
+        json({ ...noContact, status: 'APPROVED', sent_at: null }),
+    })
+    renderPage(<RecommendationsPage />, { user: TEACHER_USER })
+
+    expect(
+      await screen.findByText(/no tiene un apoderado con correo registrado\. Puedes aprobar/),
+    ).toBeInTheDocument()
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Aprobar y enviar a la familia' }))
+
+    expect(await screen.findByText(/no se envió ningún correo/)).toBeInTheDocument()
   })
 
   it('asks for confirmation before discarding', async () => {

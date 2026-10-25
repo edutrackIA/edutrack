@@ -8,7 +8,7 @@ import { PageHeader } from '../../../shared/ui/PageHeader'
 import { RiskBadge } from '../../../shared/ui/RiskBadge'
 import type { RecommendationStatus } from '../../students/types'
 import { useRecommendationQueue, type ReviewItem } from '../api'
-import { RecommendationEditor } from '../components/RecommendationEditor'
+import { RecommendationEditor, type Notice } from '../components/RecommendationEditor'
 
 const byPriority = byRiskThenName<ReviewItem>(
   (item) => item.student.risk_level,
@@ -27,7 +27,7 @@ export default function RecommendationsPage() {
     'PENDING_REVIEW') as RecommendationStatus
   const queue = useRecommendationQueue(status)
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [notice, setNotice] = useState<Notice | null>(null)
 
   const items = [...(queue.data ?? [])].sort(byPriority)
   const selected = items.find((item) => item.id === selectedId) ?? items[0]
@@ -68,8 +68,14 @@ export default function RecommendationsPage() {
 
       <div role="status" aria-live="polite" className="shrink-0">
         {notice && (
-          <p className="mb-4 rounded-md border border-risk-low/30 bg-risk-low-bg px-4 py-3 text-risk-low">
-            {notice}
+          <p
+            className={`mb-4 rounded-md border px-4 py-3 ${
+              notice.tone === 'success'
+                ? 'border-risk-low/30 bg-risk-low-bg text-risk-low'
+                : 'border-risk-medium/30 bg-risk-medium-bg text-risk-medium'
+            }`}
+          >
+            {notice.text}
           </p>
         )}
       </div>
