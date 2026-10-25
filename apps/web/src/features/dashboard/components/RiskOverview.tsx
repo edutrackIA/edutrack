@@ -17,14 +17,14 @@ export function RiskOverview({
   const pending = summary.total_students - summary.evaluated_students
 
   return (
-    <section aria-labelledby="overview-title" className="mb-10">
+    <section aria-labelledby="overview-title" className="mb-6 shrink-0">
       <h2 id="overview-title" className="sr-only">
         Panorama del bimestre
       </h2>
-      <p className="max-w-3xl font-figure text-3xl font-semibold leading-snug text-ink sm:text-4xl">
+      <p className="font-figure text-2xl font-semibold leading-snug text-ink lg:text-3xl">
         {headline(atRisk, summary.evaluated_students)}
       </p>
-      <p className="mt-3 text-ink-soft">
+      <p className="mt-1 text-ink-soft">
         {periodLabel}.
         {pending > 0 &&
           ` ${pending} ${pending === 1 ? 'estudiante aún no tiene' : 'estudiantes aún no tienen'} evaluación.`}

@@ -4,7 +4,7 @@ export function TopFactors({ factors }: { factors: FactorFrequency[] }) {
   const max = Math.max(1, ...factors.map((factor) => factor.frequency))
 
   return (
-    <section aria-labelledby="factors-title">
+    <section aria-labelledby="factors-title" className="shrink-0">
       <h2 id="factors-title" className="font-figure text-xl font-semibold text-ink">
         Qué explica el riesgo
       </h2>
@@ -12,9 +12,9 @@ export function TopFactors({ factors }: { factors: FactorFrequency[] }) {
         Factores más frecuentes entre los estudiantes en riesgo moderado y alto.
       </p>
       {factors.length === 0 ? (
-        <p className="mt-6 text-ink-soft">No hay estudiantes en riesgo moderado o alto.</p>
+        <p className="mt-4 text-ink-soft">No hay estudiantes en riesgo moderado o alto.</p>
       ) : (
-        <ol className="mt-6 flex flex-col gap-4">
+        <ol className="mt-4 flex flex-col gap-3">
           {factors.map((factor) => (
             <li key={factor.feature}>
               <div className="flex items-baseline justify-between gap-4">

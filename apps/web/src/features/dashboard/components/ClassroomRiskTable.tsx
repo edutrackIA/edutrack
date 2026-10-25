@@ -21,11 +21,12 @@ export function ClassroomRiskTable({
   const [openId, setOpenId] = useState<number | null>(null)
 
   return (
-    <section aria-labelledby="classrooms-title">
-      <h2 id="classrooms-title" className="mb-4 font-figure text-xl font-semibold text-ink">
+    <section aria-labelledby="classrooms-title" className="flex flex-col lg:min-h-0">
+      <h2 id="classrooms-title" className="mb-3 shrink-0 font-figure text-xl font-semibold text-ink">
         Por aula
       </h2>
-      <Table caption="Semáforo de cada aula">
+      <div className="lg:min-h-0 lg:overflow-y-auto">
+        <Table caption="Semáforo de cada aula">
         <TableHead>
           <tr>
             <TableHeaderCell>Aula</TableHeaderCell>
@@ -85,7 +86,8 @@ export function ClassroomRiskTable({
             )
           })}
         </TableBody>
-      </Table>
+        </Table>
+      </div>
     </section>
   )
 }
