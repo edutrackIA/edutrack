@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from datetime import date
 from typing import Annotated
 
 import jwt
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.errors import ForbiddenError, UnauthorizedError
 from app.core.security import decode_access_token
+from app.core.time import school_today
 from app.domain import Role, User
 from app.repositories.user_repository import UserRepository
 
@@ -46,3 +48,11 @@ def require_roles(*roles: Role) -> Callable[[User], User]:
         return user
 
     return checker
+
+
+def get_school_today() -> date:
+    """Injectable clock, so tests can set the school's current date."""
+    return school_today()
+
+
+SchoolToday = Annotated[date, Depends(get_school_today)]

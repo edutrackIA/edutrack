@@ -11,6 +11,7 @@ from app.api.routes import (
     recommendations,
     risk,
     settings,
+    situations,
     students,
 )
 
@@ -26,3 +27,4 @@ api_router.include_router(recommendations.router)
 api_router.include_router(settings.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(periods.router)
+api_router.include_router(situations.router)
