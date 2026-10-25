@@ -23,6 +23,8 @@ export function Modal({ open, onClose, title, description, children }: ModalProp
     if (!open && dialog.open) dialog.close()
   }, [open])
 
+  // The dialog gets its own compositing layer (translateZ) so scrolling inside it
+  // does not force the browser to repaint the blurred page behind.
   return (
     <dialog
       ref={dialogRef}
@@ -31,7 +33,7 @@ export function Modal({ open, onClose, title, description, children }: ModalProp
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}
-      className="m-auto w-[min(44rem,calc(100%-2rem))] rounded-2xl border border-rule bg-surface p-0 text-ink shadow-2xl backdrop:bg-[rgb(7_12_22/0.55)] backdrop:backdrop-blur-sm"
+      className="m-auto w-[min(44rem,calc(100%-2rem))] rounded-2xl border border-rule bg-surface p-0 text-ink shadow-xl [transform:translateZ(0)] backdrop:bg-[rgb(7_12_22/0.55)] backdrop:backdrop-blur-sm"
     >
       <div className="flex max-h-[85vh] flex-col">
         <header className="flex shrink-0 items-start justify-between gap-4 border-b border-rule px-6 py-4">
@@ -57,7 +59,9 @@ export function Modal({ open, onClose, title, description, children }: ModalProp
             </svg>
           </button>
         </header>
-        <div className="overflow-y-auto px-6 py-5">{children}</div>
+        <div className="overflow-y-auto overscroll-contain px-6 py-5 [will-change:scroll-position]">
+          {children}
+        </div>
       </div>
     </dialog>
   )
