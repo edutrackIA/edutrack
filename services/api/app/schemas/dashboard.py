@@ -18,6 +18,16 @@ class FactorFrequency(BaseModel):
     frequency: int
 
 
+class StudentRiskItem(BaseModel):
+    student_id: int
+    code: str
+    full_name: str
+    classroom_id: int
+    classroom: str
+    level: RiskLevel
+    probability: float
+
+
 class DashboardSummary(BaseModel):
     period_id: int | None
     period_label: str | None
@@ -26,3 +36,4 @@ class DashboardSummary(BaseModel):
     by_level: dict[RiskLevel, int]
     by_classroom: list[ClassroomRiskSummary]
     top_factors: list[FactorFrequency]
+    students: list[StudentRiskItem]
