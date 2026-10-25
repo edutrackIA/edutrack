@@ -21,6 +21,11 @@ export function renderApp(path: string) {
   return router
 }
 
+function toEntry(path: string, state: unknown) {
+  const [pathname, search] = path.split('?')
+  return { pathname, search: search ? `?${search}` : '', state }
+}
+
 interface RenderPageOptions {
   /** Signed-in user seen by the page. */
   user?: User
@@ -28,10 +33,15 @@ interface RenderPageOptions {
   route?: string
   /** Initial URL, e.g. "/estudiantes/6?tab=notas". */
   path?: string
+  /** Router state of the initial URL, as a Link with `state` would set it. */
+  state?: unknown
 }
 
 /** Renders a single page with data fetching and routing, without the login flow. */
-export function renderPage(page: ReactNode, { user, route, path = '/' }: RenderPageOptions = {}) {
+export function renderPage(
+  page: ReactNode,
+  { user, route, path = '/', state }: RenderPageOptions = {},
+) {
   const queryClient = createQueryClient()
   queryClient.setDefaultOptions({ queries: { retry: false } })
   const auth = {
@@ -45,7 +55,7 @@ export function renderPage(page: ReactNode, { user, route, path = '/' }: RenderP
   return render(
     <QueryClientProvider client={queryClient}>
       <AuthContext.Provider value={auth}>
-        <MemoryRouter initialEntries={[path]}>
+        <MemoryRouter initialEntries={[toEntry(path, state)]}>
           {route ? (
             <Routes>
               <Route path={route} element={page} />

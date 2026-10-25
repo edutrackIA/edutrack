@@ -110,6 +110,30 @@ describe('RecommendationsPage', () => {
     expect(calls).toEqual(['send'])
   })
 
+  it('orders the queue by risk priority and then alphabetically', async () => {
+    const at = (id: number, name: string, level: string) => {
+      const item = recommendation(id, name)
+      return { ...item, student: { ...item.student, risk_level: level } }
+    }
+    mockApi({
+      'GET /recommendations': () =>
+        json([
+          at(1, 'Salas García, Ana', 'LOW'),
+          at(2, 'Vargas, Zoe', 'HIGH'),
+          at(3, 'Castillo, Beto', 'MEDIUM'),
+          at(4, 'Alarcón, Abel', 'HIGH'),
+        ]),
+    })
+    renderPage(<RecommendationsPage />, { user: TEACHER_USER })
+
+    const queue = await screen.findByRole('navigation', { name: 'Por revisar' })
+    const names = within(queue)
+      .getAllByRole('button')
+      .map((button) => button.querySelector('span')?.textContent)
+
+    expect(names).toEqual(['Alarcón, Abel', 'Vargas, Zoe', 'Castillo, Beto', 'Salas García, Ana'])
+  })
+
   it('explains an empty queue', async () => {
     mockApi({ 'GET /recommendations': () => json([]) })
 
