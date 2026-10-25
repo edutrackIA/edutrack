@@ -24,8 +24,10 @@ export default function DashboardPage() {
     periods.data?.find((period) => period.id === activePeriod)?.label ?? data?.period_label ?? ''
 
   return (
-    <>
+    // On desktop the page fills the viewport exactly; long lists scroll inside their panel.
+    <div className="flex flex-col lg:h-full">
       <PageHeader
+        className="mb-5 shrink-0"
         title="Resumen del colegio"
         description="Cómo está cada aula y qué explica el riesgo en el bimestre."
         actions={
@@ -47,7 +49,7 @@ export default function DashboardPage() {
       />
 
       {report.isError && (
-        <div className="mb-6">
+        <div className="mb-4 shrink-0">
           <ErrorMessage>{messageFor(report.error)}</ErrorMessage>
         </div>
       )}
@@ -62,16 +64,25 @@ export default function DashboardPage() {
         />
       )}
 
-      {data && data.period_id !== null && (
+      {data && data.period_id !== null && data.evaluated_students === 0 && (
+        <EmptyState
+          title={`${periodLabel || 'Este bimestre'} aún no tiene evaluación de riesgo`}
+          description="Elige otro bimestre o pide al área de análisis que ejecute la evaluación."
+        />
+      )}
+
+      {data && data.period_id !== null && data.evaluated_students > 0 && (
         <>
           <RiskOverview summary={data} periodLabel={periodLabel} />
-          <SchoolTrafficLight summary={data} />
-          <div className="grid gap-10 lg:grid-cols-[1.6fr_1fr]">
-            <ClassroomRiskTable classrooms={data.by_classroom} students={data.students} />
-            <TopFactors factors={data.top_factors} />
+          <div className="grid gap-8 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:grid-rows-[minmax(0,1fr)]">
+            <SchoolTrafficLight summary={data} />
+            <div className="flex flex-col gap-8 lg:min-h-0">
+              <ClassroomRiskTable classrooms={data.by_classroom} students={data.students} />
+              <TopFactors factors={data.top_factors} />
+            </div>
           </div>
         </>
       )}
-    </>
+    </div>
   )
 }

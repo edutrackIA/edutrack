@@ -113,6 +113,28 @@ describe('DashboardPage', () => {
     expect(screen.queryByRole('button', { name: 'Descargar reporte PDF' })).not.toBeInTheDocument()
   })
 
+  it('tells when the chosen period has not been assessed', async () => {
+    mockApi({
+      'GET /dashboard/summary': () =>
+        json({
+          ...SUMMARY,
+          period_id: 2,
+          evaluated_students: 0,
+          by_level: { LOW: 0, MEDIUM: 0, HIGH: 0 },
+          students: [],
+        }),
+      'GET /periods': () => json(PERIODS),
+    })
+
+    renderPage(<DashboardPage />)
+
+    expect(
+      await screen.findByText('Bimestre 2, 2026 aún no tiene evaluación de riesgo'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Ningún estudiante/)).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Bimestre')).toBeInTheDocument()
+  })
+
   it('loads another period from the selector', async () => {
     const fetchMock = mockApi({
       'GET /dashboard/summary': () => json(SUMMARY),
