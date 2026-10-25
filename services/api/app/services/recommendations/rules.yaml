@@ -1,0 +1,434 @@
+# Recommendation rules for EduTrack.
+#
+# Each rule reads facts about the student (see KNOWN_FACTS in engine.py) and active
+# context situations, and contributes text for the family and/or an action for the tutor.
+#
+#   slot      Rules sharing a slot compete: only the highest priority one is used.
+#             empathy, opening, strength and closing have a fixed place in the message;
+#             any other slot is an action (at most 3 per message).
+#   priority  0 to 100. Higher goes first.
+#   levels    Risk levels where the rule applies (default: MEDIUM and HIGH).
+#   when      Every condition must hold. when_any: at least one must hold.
+#   if_situations / unless_situations   Active context situations that enable or suppress it.
+#   family    Phrasings for the family; they rotate across periods. Placeholders:
+#             {name} {subjects} {best_subject} {tutor} {risk_periods}
+#   tutor     Action for the tutor. Never shown to the family.
+#
+# Family texts never mention risk levels or probabilities.
+
+rules:
+  # --- Empatía y adaptaciones por situación de contexto ------------------------------
+
+  - id: grief_support
+    slot: empathy
+    priority: 100
+    levels: [LOW, MEDIUM, HIGH]
+    if_situations: [GRIEF]
+    family:
+      - "Acompañamiento: sabemos que es un momento difícil para la familia. Lo más importante ahora es el bienestar de {name}, y el colegio les dará el tiempo que necesiten."
+    tutor: "Derivar a TOE para acompañamiento emocional; no presionar por notas ni asistencia."
+
+  - id: health_recovery
+    slot: attendance
+    priority: 99
+    levels: [LOW, MEDIUM, HIGH]
+    if_situations: [HEALTH]
+    when:
+      - { fact: absences, op: gte, value: 1 }
+    family:
+      - "Salud y clases: deseamos que {name} se recupere pronto. El tutor coordinará con ustedes cómo ponerse al día, sin presión."
+    tutor: "Coordinar un plan flexible de recuperación de clases por motivo de salud."
+
+  - id: special_needs
+    slot: adaptation
+    priority: 56
+    levels: [LOW, MEDIUM, HIGH]
+    if_situations: [SPECIAL_NEEDS]
+    family:
+      - "Acompañamiento: el tutor coordinará con el especialista las adaptaciones que {name} necesita para avanzar a su ritmo."
+    tutor: "Coordinar adaptaciones con el especialista; no comparar con el promedio del aula."
+
+  - id: migrant_adaptation
+    slot: adaptation
+    priority: 55
+    levels: [LOW, MEDIUM, HIGH]
+    if_situations: [MIGRANT]
+    family:
+      - "Adaptación: el tutor puede orientarles sobre el sistema escolar y el apoyo de nivelación disponible para {name}."
+    tutor: "Coordinar nivelación y acompañamiento de adaptación."
+
+  - id: relocation_adaptation
+    slot: adaptation
+    priority: 54
+    levels: [LOW, MEDIUM, HIGH]
+    if_situations: [RELOCATION]
+    family:
+      - "Adaptación: los cambios toman tiempo. El tutor acompañará de cerca a {name} durante las próximas semanas."
+    tutor: "Hacer un seguimiento cercano durante el periodo de adaptación."
+
+  - id: parents_separation
+    slot: family
+    priority: 53
+    levels: [LOW, MEDIUM, HIGH]
+    if_situations: [PARENTS_SEPARATION]
+    family:
+      - "Acompañamiento: mantener rutinas estables de estudio en ambos hogares ayuda mucho a {name} en esta etapa."
+    tutor: "Considerar a ambos apoderados en las comunicaciones, cuando corresponda."
+
+  - id: parents_away
+    slot: family
+    priority: 52
+    levels: [LOW, MEDIUM, HIGH]
+    if_situations: [PARENTS_AWAY]
+    family:
+      - "Acompañamiento: una conversación diaria breve sobre el colegio, aunque sea por llamada, motiva mucho a {name}."
+    tutor: "Coordinar con el familiar a cargo del cuidado y registrarlo como contacto."
+
+  - id: psychology_follow_up
+    slot: team
+    priority: 97
+    levels: [LOW, MEDIUM, HIGH]
+    if_situations: [PSYCHOLOGY_FOLLOW_UP]
+    tutor: "Coordinar con psicología antes de contactar a la familia para no duplicar indicaciones."
+
+  # --- Solo para el equipo: nunca generan texto para la familia -----------------------
+
+  - id: bullying_protocol
+    slot: team
+    priority: 100
+    levels: [LOW, MEDIUM, HIGH]
+    if_situations: [BULLYING]
+    tutor: "Activar el protocolo de convivencia escolar y derivar a TOE o psicología."
+
+  - id: family_violence_protocol
+    slot: team
+    priority: 100
+    levels: [LOW, MEDIUM, HIGH]
+    if_situations: [FAMILY_VIOLENCE]
+    tutor: "Activar el protocolo ante sospecha de violencia y hacer el reporte correspondiente. No informar a la familia."
+
+  - id: substance_use_protocol
+    slot: team
+    priority: 100
+    levels: [LOW, MEDIUM, HIGH]
+    if_situations: [SUBSTANCE_USE]
+    tutor: "Derivar a TOE o psicología por sospecha de consumo."
+
+  - id: pregnancy_plan
+    slot: team
+    priority: 98
+    levels: [LOW, MEDIUM, HIGH]
+    if_situations: [PREGNANCY]
+    tutor: "Coordinar con TOE un plan flexible de asistencia y evaluación."
+
+  # --- Historial ------------------------------------------------------------------------
+
+  - id: improvement
+    slot: strength
+    priority: 98
+    levels: [LOW, MEDIUM, HIGH]
+    when:
+      - { fact: improved, op: "true" }
+    family:
+      - "Avance: {name} mejoró respecto al bimestre anterior. ¡Felicitaciones por el esfuerzo de todos!"
+      - "Avance: este bimestre {name} mostró una mejora clara. Sigan así, el acompañamiento en casa está dando resultados."
+    tutor: "Reconocer el avance del estudiante frente al bimestre anterior."
+
+  - id: persistent_risk
+    slot: meeting
+    priority: 45
+    when:
+      - { fact: consecutive_risk_periods, op: gte, value: 2 }
+    family:
+      - "Reunión: queremos conversar con ustedes para acompañar mejor a {name}. El tutor les propondrá una fecha."
+    tutor: "Lleva {risk_periods} bimestres seguidos necesitando apoyo: derivar a psicología y citar a la Escuela de Padres."
+
+  # --- Asistencia -------------------------------------------------------------------------
+
+  - id: justified_absences
+    slot: attendance
+    priority: 93
+    unless_situations: [HEALTH, GRIEF]
+    when:
+      - { fact: justified_absences, op: gte, value: 3 }
+    family:
+      - "Asistencia: sabemos que {name} tuvo faltas justificadas este bimestre. Coordinemos con el tutor un plan para ponerse al día en las clases."
+    tutor: "Coordinar un plan de recuperación de las clases perdidas, sin culpar a la familia."
+
+  - id: monday_friday_absences
+    slot: attendance
+    priority: 95
+    unless_situations: [HEALTH, GRIEF]
+    when:
+      - { fact: absences, op: gte, value: 3 }
+      - { fact: monday_friday_absence_share, op: gte, value: 0.6 }
+    family:
+      - "Asistencia: notamos que las faltas de {name} se concentran los lunes y viernes. Revisar juntos las rutinas del fin de semana puede ayudar."
+    tutor: "Revisar con la familia el patrón de faltas en lunes y viernes."
+
+  - id: attendance_severe
+    slot: attendance
+    priority: 90
+    unless_situations: [HEALTH, GRIEF]
+    when:
+      - { fact: attendance_rate, op: lt, value: 0.8 }
+    family:
+      - "Asistencia: {name} faltó a muchas clases este bimestre. Les pedimos conversar sobre los motivos y comunicarse con el tutor esta semana."
+      - "Asistencia: las faltas de {name} este bimestre son frecuentes. Comuníquense con el tutor para buscar juntos una solución."
+    tutor: "Contactar a la familia esta semana y registrar el motivo de las inasistencias."
+
+  - id: attendance_moderate
+    slot: attendance
+    priority: 70
+    unless_situations: [HEALTH, GRIEF]
+    when:
+      - { fact: attendance_rate, op: lt, value: 0.9 }
+    family:
+      - "Asistencia: {name} ha faltado a varias clases este bimestre. Le sugerimos conversar sobre los motivos y asegurar su asistencia diaria."
+      - "Asistencia: cada clase cuenta. Asegurar que {name} asista todos los días le ayudará a no atrasarse."
+    tutor: "Hacer seguimiento preventivo de la asistencia."
+
+  - id: lateness
+    slot: lateness
+    priority: 60
+    unless_situations: [HEALTH, GRIEF]
+    when:
+      - { fact: late_count, op: gte, value: 5 }
+    family:
+      - "Puntualidad: {name} registró varias tardanzas. Establecer una rutina fija por las mañanas puede ayudarle a llegar a tiempo."
+    tutor: "Conversar con el estudiante sobre la puntualidad e informar a la familia."
+
+  # --- Notas ---------------------------------------------------------------------------
+
+  - id: sudden_drop
+    slot: trend
+    priority: 88
+    unless_situations: [GRIEF]
+    when:
+      - { fact: previous_avg_score, op: gte, value: 14 }
+      - { fact: score_trend, op: lte, value: -2 }
+    family:
+      - "Cambio reciente: {name} solía tener muy buenas notas y este bimestre bajaron. Conversar con calma sobre qué cambió puede ayudar a encontrar la causa a tiempo."
+    tutor: "Entrevista individual: caída brusca en un estudiante de buen rendimiento."
+
+  - id: failed_several
+    slot: grades
+    priority: 85
+    unless_situations: [GRIEF]
+    when:
+      - { fact: failed_subjects, op: gte, value: 3 }
+    family:
+      - "Cursos a reforzar: {subjects}. Al ser varios cursos, conviene organizar un horario semanal de estudio que alterne entre ellos."
+      - "Cursos a reforzar: {subjects}. Dividir el estudio en bloques cortos por curso, a lo largo de la semana, rinde más que estudiar todo junto."
+    tutor: "Derivar a reforzamiento en: {subjects}. Revisar hábitos de estudio con el estudiante."
+
+  - id: failed_some
+    slot: grades
+    priority: 80
+    unless_situations: [GRIEF]
+    when:
+      - { fact: failed_subjects, op: gte, value: 1 }
+    family:
+      - "Cursos a reforzar: {subjects}. Acordar un horario fijo de estudio en casa, de al menos una hora diaria, puede ayudarle mucho."
+      - "Cursos a reforzar: {subjects}. Revisar juntos las tareas de estos cursos un par de veces por semana ayuda a no atrasarse."
+    tutor: "Derivar a reforzamiento en: {subjects}."
+
+  - id: math_tip
+    slot: subject_tip
+    priority: 50
+    unless_situations: [GRIEF]
+    when:
+      - { fact: failing_subjects, op: contains, value: "Matemática" }
+    family:
+      - "Matemática: practicar 15 minutos diarios de ejercicios cortos funciona mejor que estudiar varias horas un solo día."
+
+  - id: reading_tip
+    slot: subject_tip
+    priority: 49
+    unless_situations: [GRIEF]
+    when:
+      - { fact: failing_subjects, op: contains, value: "Comunicación" }
+    family:
+      - "Comunicación: leer juntos 20 minutos al día, sobre cualquier tema que le interese a {name}, fortalece la comprensión lectora."
+
+  - id: negative_trend
+    slot: trend
+    priority: 65
+    unless_situations: [GRIEF]
+    when:
+      - { fact: score_trend, op: lte, value: -1.5 }
+    family:
+      - "Cambio reciente: las notas de {name} bajaron respecto al bimestre anterior. Conversar sobre qué cambió puede ayudar a identificar dificultades a tiempo."
+    tutor: "Realizar una entrevista individual para identificar qué cambió."
+
+  - id: low_average
+    slot: grades
+    priority: 60
+    unless_situations: [GRIEF]
+    when:
+      - { fact: avg_score, op: lt, value: 12 }
+    family:
+      - "Rendimiento: revisar juntos cada semana los cuadernos y tareas de {name} le ayudará a mantenerse al día en sus cursos."
+    tutor: "Revisar con el estudiante la organización de sus tareas y cuadernos."
+
+  # --- Conducta ------------------------------------------------------------------------
+
+  - id: behavior_with_good_grades
+    slot: behavior
+    priority: 75
+    unless_situations: [BULLYING]
+    when:
+      - { fact: behavior_rating, op: lte, value: 2 }
+      - { fact: avg_score, op: gte, value: 14 }
+    family:
+      - "Convivencia: {name} tiene un buen rendimiento académico. Conversar en casa sobre el respeto y la participación en clase completará su buen desempeño."
+    tutor: "Trabajo de convivencia con TOE: conducta baja pese al buen rendimiento."
+
+  - id: behavior_low
+    slot: behavior
+    priority: 70
+    unless_situations: [BULLYING]
+    when:
+      - { fact: behavior_rating, op: lte, value: 2 }
+    family:
+      - "Convivencia: conversar en casa sobre el respeto y la participación en clase será de gran apoyo para {name}."
+    tutor: "Registrar las incidencias y coordinar con convivencia escolar."
+
+  # --- Estudio, recursos y contexto familiar ------------------------------------------
+
+  - id: economic_hardship
+    slot: resources
+    priority: 64
+    levels: [LOW, MEDIUM, HIGH]
+    if_situations: [ECONOMIC_HARDSHIP]
+    family:
+      - "Recursos: el colegio puede apoyar con materiales y espacios de estudio, sin costo para la familia. Coordinen con el tutor lo que necesiten."
+    tutor: "Evaluar apoyo con materiales, becas o programas del colegio."
+
+  - id: student_works
+    slot: work
+    priority: 63
+    when:
+      - { fact: student_works, op: "true" }
+    family:
+      - "Equilibrio: si {name} realiza actividades laborales, le recomendamos coordinar con el tutor para equilibrarlas con sus estudios."
+    tutor: "Coordinar con bienestar estudiantil o psicología."
+
+  - id: missing_resources
+    slot: resources
+    priority: 62
+    when:
+      - { fact: avg_score, op: lt, value: 12 }
+    when_any:
+      - { fact: home_internet, op: "false" }
+      - { fact: has_study_device, op: "false" }
+    family:
+      - "Recursos: el colegio cuenta con el aula de innovación (AIP) y la biblioteca para que {name} haga sus tareas. El tutor puede orientarles sobre los horarios."
+    tutor: "Orientar sobre el uso del AIP y la biblioteca del colegio."
+
+  - id: home_responsibilities
+    slot: study
+    priority: 58
+    if_situations: [HOME_RESPONSIBILITIES]
+    family:
+      - "Tiempo de estudio: sabemos que en casa hay muchas responsabilidades. El colegio puede ofrecer un espacio para que {name} haga sus tareas; consulten con el tutor."
+    tutor: "Ofrecer un espacio de estudio en el colegio (biblioteca o AIP)."
+
+  - id: crowded_home
+    slot: study
+    priority: 57
+    unless_situations: [HOME_RESPONSIBILITIES, GRIEF]
+    when:
+      - { fact: household_size, op: gte, value: 6 }
+      - { fact: study_hours_week, op: lt, value: 6 }
+    family:
+      - "Espacio de estudio: acordar un lugar y un horario fijo en casa, aunque sea corto, ayuda a {name} a concentrarse."
+
+  - id: few_study_hours
+    slot: study
+    priority: 55
+    unless_situations: [HOME_RESPONSIBILITIES, GRIEF]
+    when:
+      - { fact: study_hours_week, op: lt, value: 5 }
+    family:
+      - "Hábitos de estudio: dedicar más tiempo al estudio en casa, en un espacio tranquilo y sin distracciones, puede marcar la diferencia."
+    tutor: "Asignar tareas cortas con seguimiento semanal."
+
+  - id: family_communication
+    slot: family
+    priority: 50
+    unless_situations: [PARENTS_AWAY]
+    when:
+      - { fact: family_communication, op: lte, value: 2 }
+    family:
+      - "Comunicación: dedicar unos minutos al día a conversar con {name} sobre cómo le va en el colegio fortalece su motivación."
+    tutor: "Programar una reunión con la familia."
+
+  - id: general_support
+    slot: general
+    priority: 1
+    family:
+      - "Acompañamiento: preguntar cada día a {name} cómo le fue en el colegio y revisar juntos sus pendientes ayuda a detectar dificultades a tiempo."
+
+  # --- Fortalezas (una por mensaje) ----------------------------------------------------
+
+  - id: high_achiever
+    slot: strength
+    priority: 40
+    levels: [LOW, MEDIUM, HIGH]
+    if_situations: [HIGH_ACHIEVER]
+    family:
+      - "Retos: {name} puede aprovechar actividades de profundización. El tutor les compartirá algunas opciones."
+    tutor: "Proponer actividades de profundización o concursos."
+
+  - id: strength_behavior
+    slot: strength
+    priority: 30
+    levels: [LOW, MEDIUM, HIGH]
+    when:
+      - { fact: behavior_rating, op: gte, value: 4 }
+    family:
+      - "Fortaleza: {name} mantiene una muy buena conducta en clase."
+
+  - id: strength_attendance
+    slot: strength
+    priority: 29
+    levels: [LOW, MEDIUM, HIGH]
+    when:
+      - { fact: attendance_rate, op: gte, value: 0.95 }
+    family:
+      - "Fortaleza: {name} asiste a clases con mucha regularidad."
+
+  - id: strength_best_subject
+    slot: strength
+    priority: 28
+    levels: [LOW, MEDIUM, HIGH]
+    when:
+      - { fact: has_best_subject, op: "true" }
+    family:
+      - "Fortaleza: {name} destaca en {best_subject}."
+
+  # --- Apertura y cierre ---------------------------------------------------------------
+
+  - id: good_performance
+    slot: opening
+    priority: 90
+    levels: [LOW]
+    unless_situations: [GRIEF]
+    family:
+      - "Buen desempeño: {name} mantiene un buen rendimiento este bimestre. ¡Sigan acompañándole con la misma dedicación!"
+      - "Buen desempeño: {name} tuvo un buen bimestre. El apoyo de la familia se nota."
+    tutor: "Mantener el seguimiento regular."
+
+  - id: next_goals
+    slot: goals
+    priority: 10
+    levels: [LOW]
+    family:
+      - "Próximas metas: conversar sobre sus objetivos para el siguiente bimestre le ayudará a seguir creciendo."
+
+  - id: follow_up
+    slot: closing
+    priority: 10
+    family:
+      - "Seguimiento: su tutor, {tutor}, estará atento al avance de {name}. Puede coordinar una reunión desde el portal."
