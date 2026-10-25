@@ -17,6 +17,14 @@ class AcademicRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
+    def list_periods(self, institution_id: int) -> list[AcademicPeriod]:
+        query = (
+            select(AcademicPeriod)
+            .where(AcademicPeriod.institution_id == institution_id)
+            .order_by(AcademicPeriod.start_date)
+        )
+        return list(self.db.scalars(query))
+
     def get_period(self, period_id: int) -> AcademicPeriod | None:
         return self.db.get(AcademicPeriod, period_id)
 
