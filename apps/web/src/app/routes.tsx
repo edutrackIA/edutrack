@@ -14,6 +14,9 @@ const DashboardPage = lazy(() => import('../features/dashboard/pages/DashboardPa
 const ClassroomsPage = lazy(() => import('../features/classrooms/pages/ClassroomsPage'))
 const StudentRecordPage = lazy(() => import('../features/students/pages/StudentRecordPage'))
 const AlertsPage = lazy(() => import('../features/alerts/pages/AlertsPage'))
+const WeeklyFollowUpPage = lazy(
+  () => import('../features/situations/pages/WeeklyFollowUpPage'),
+)
 const RecommendationsPage = lazy(
   () => import('../features/recommendations/pages/RecommendationsPage'),
 )
@@ -55,6 +58,13 @@ const SECTIONS: Section[] = [
     title: 'Recomendaciones',
     description: 'Revisa y aprueba las sugerencias antes de enviarlas a las familias.',
     page: RecommendationsPage,
+  },
+  {
+    path: 'seguimiento',
+    roles: ['TEACHER'],
+    title: 'Seguimiento semanal',
+    description: 'Situaciones de contexto de tus estudiantes.',
+    page: WeeklyFollowUpPage,
   },
   {
     path: 'evaluaciones',

@@ -38,7 +38,7 @@ const RISK = [
   },
 ]
 
-const BASE_HANDLERS = {
+const BASE_HANDLERS: Record<string, () => Response> = {
   'GET /students/6': () => json(STUDENT),
   'GET /students/6/summary': () =>
     json({ period_id: 3, average_score: 9.8, attendance_rate: 0.78, grades: [] }),
@@ -72,6 +72,21 @@ const BASE_HANDLERS = {
 
 const FORBIDDEN = () => json({ code: 'FORBIDDEN', message: 'No' }, 403)
 
+BASE_HANDLERS['GET /students/6/situations'] = () =>
+  json([
+    {
+      id: 1,
+      student_id: 6,
+      kind: 'HEALTH',
+      label: 'Problema de salud',
+      group: 'MESSAGE',
+      note: 'Hospitalizada una semana.',
+      started_on: '2026-10-20',
+      resolved_on: null,
+      created_at: '2026-10-20T10:00:00',
+    },
+  ])
+
 describe('StudentRecordPage', () => {
   it('shows the full record to a teacher without family data', async () => {
     mockApi({
@@ -102,6 +117,7 @@ describe('StudentRecordPage', () => {
       await screen.findByText('Solo el tutor del aula y la dirección pueden ver las actas.'),
     ).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Encuesta familiar' })).not.toBeInTheDocument()
+    expect(await screen.findByText('Hospitalizada una semana.')).toBeInTheDocument()
   })
 
   it('shows commitments and the family survey to the director', async () => {

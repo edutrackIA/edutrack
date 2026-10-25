@@ -123,6 +123,18 @@ class AccessPolicy:
             return
         raise self._forbidden()
 
+    def ensure_can_manage_situations(self, user: User, student: Student) -> None:
+        """Context situations are sensitive: only the classroom tutor and the director."""
+        self.ensure_can_manage_commitments(user, student)
+
+    def ensure_can_manage_checkin(self, user: User, classroom: Classroom) -> None:
+        self._ensure_same_institution(user, classroom.institution_id, "Classroom")
+        if user.role == Role.DIRECTOR:
+            return
+        if user.role == Role.TEACHER and classroom.tutor_id == user.id:
+            return
+        raise self._forbidden()
+
     @staticmethod
     def _ensure_same_institution(user: User, institution_id: int, resource: str) -> None:
         # Records from other institutions are reported as missing, not forbidden,

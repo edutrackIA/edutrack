@@ -8,6 +8,8 @@ import { PageHeader } from '../../../shared/ui/PageHeader'
 import { RiskBadge } from '../../../shared/ui/RiskBadge'
 import { classroomLabel, useClassrooms } from '../../classrooms/api'
 import { usePeriods, type Period } from '../../periods/api'
+import { useStudentSituations, type Situation } from '../../situations/api'
+import { SituationChip } from '../../situations/components/SituationChip'
 import {
   useStudent,
   useStudentCommitments,
@@ -250,6 +252,30 @@ function SurveyCard({ survey, periods }: { survey: FamilySurvey; periods?: Perio
   )
 }
 
+function SituationsCard({ situations }: { situations: Situation[] }) {
+  return (
+    <Card title="Situaciones de contexto">
+      {situations.length === 0 ? (
+        <p className="text-ink-soft">No hay situaciones activas.</p>
+      ) : (
+        <ul className="divide-y divide-rule">
+          {situations.map((situation) => (
+            <li key={situation.id} className="py-3 first:pt-0 last:pb-0">
+              <p className="flex flex-wrap items-center justify-between gap-2">
+                <SituationChip situation={situation} />
+                <span className="text-sm text-ink-soft">
+                  Desde el {formatDate(situation.started_on)}
+                </span>
+              </p>
+              {situation.note && <p className="mt-2">{situation.note}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  )
+}
+
 export default function StudentRecordPage() {
   const studentId = Number(useParams().studentId)
   const location = useLocation()
@@ -260,6 +286,7 @@ export default function StudentRecordPage() {
   const recommendations = useStudentRecommendations(studentId)
   const commitments = useStudentCommitments(studentId)
   const surveys = useStudentSurveys(studentId)
+  const situations = useStudentSituations(studentId)
   const periods = usePeriods()
   const classrooms = useClassrooms()
 
@@ -326,6 +353,8 @@ export default function StudentRecordPage() {
           ) : (
             risk.data && <RiskCard history={risk.data} periods={periods.data} />
           )}
+          {/* Only the tutor and the director see context situations. */}
+          {situations.data && <SituationsCard situations={situations.data} />}
           {recommendations.isError ? (
             <ErrorMessage>{messageFor(recommendations.error)}</ErrorMessage>
           ) : (

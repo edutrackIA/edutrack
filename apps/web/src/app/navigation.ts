@@ -15,6 +15,7 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     { to: '/aulas', label: 'Mis aulas' },
     { to: '/alertas', label: 'Alertas' },
     { to: '/recomendaciones', label: 'Recomendaciones' },
+    { to: '/seguimiento', label: 'Seguimiento semanal' },
   ],
   ANALYST: [
     { to: '/evaluaciones', label: 'Evaluaciones' },
