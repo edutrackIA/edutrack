@@ -115,6 +115,14 @@ class AcademicRepository:
             select(Attendance).where(Attendance.student_id == student_id, Attendance.date == day)
         )
 
+    def attendance_records(self, student_id: int, start: date, end: date) -> list[Attendance]:
+        query = select(Attendance).where(
+            Attendance.student_id == student_id,
+            Attendance.date >= start,
+            Attendance.date <= end,
+        )
+        return list(self.db.scalars(query))
+
     def add(self, entity: Grade | BehaviorRecord | Attendance) -> None:
         self.db.add(entity)
         self.db.flush()
