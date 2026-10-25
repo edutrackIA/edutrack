@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { ApiError } from '../../../shared/api/client'
 import { messageFor } from '../../../shared/api/errors'
 import { formatDate, formatPercent, formatScore } from '../../../shared/lib/format'
@@ -19,6 +19,7 @@ import {
 } from '../api'
 import { formatFactorValue } from '../factor-format'
 import { RiskFactors } from '../components/RiskFactors'
+import { backLink } from '../navigation'
 import type { Commitment, FamilySurvey, Grade, Recommendation, RiskAssessment } from '../types'
 
 const PASSING_SCORE = 11
@@ -251,6 +252,7 @@ function SurveyCard({ survey, periods }: { survey: FamilySurvey; periods?: Perio
 
 export default function StudentRecordPage() {
   const studentId = Number(useParams().studentId)
+  const location = useLocation()
   const student = useStudent(studentId)
   const summary = useStudentSummary(studentId, null)
   const risk = useStudentRiskHistory(studentId)
@@ -280,15 +282,13 @@ export default function StudentRecordPage() {
   const classroom = classrooms.data?.find((item) => item.id === detail.classroom_id)
   const classroomName = classroom ? classroomLabel(classroom) : 'Aula'
   const guardians = detail.guardians.map((guardian) => guardian.full_name).join(', ')
+  const back = backLink(location.state, detail.classroom_id, classroomName)
 
   return (
     <>
       <p className="mb-3">
-        <Link
-          to={`/aulas?aula=${detail.classroom_id}`}
-          className="text-sm font-bold text-accent hover:underline"
-        >
-          Volver a {classroomName}
+        <Link to={back.to} className="text-sm font-bold text-accent hover:underline">
+          {back.label}
         </Link>
       </p>
       <PageHeader

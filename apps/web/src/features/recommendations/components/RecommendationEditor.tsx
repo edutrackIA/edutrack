@@ -5,6 +5,7 @@ import { formatDate } from '../../../shared/lib/format'
 import { Button } from '../../../shared/ui/Button'
 import { ErrorMessage } from '../../../shared/ui/Feedback'
 import { RiskBadge } from '../../../shared/ui/RiskBadge'
+import { useRecordLinkState } from '../../students/navigation'
 import {
   useApproveRecommendation,
   useDiscardRecommendation,
@@ -73,6 +74,7 @@ export function RecommendationEditor({
   const approve = useApproveRecommendation()
   const discard = useDiscardRecommendation()
   const resend = useResendRecommendation()
+  const linkState = useRecordLinkState()
 
   const pending = recommendation.status === 'PENDING_REVIEW'
   const cleaned = clean(items)
@@ -113,6 +115,7 @@ export function RecommendationEditor({
         </div>
         <Link
           to={`/estudiantes/${student.id}`}
+          state={linkState}
           className="text-sm font-bold text-accent hover:underline"
         >
           Ver ficha completa
