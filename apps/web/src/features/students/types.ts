@@ -50,8 +50,34 @@ export interface Recommendation {
   id: number
   period_id: number
   status: RecommendationStatus
+  parent_items: string[]
+  teacher_items: string[]
+  reviewed_at: string | null
   sent_at: string | null
   created_at: string
+}
+
+export type CommitmentStatus = 'OPEN' | 'FULFILLED' | 'BREACHED'
+
+export interface Commitment {
+  id: number
+  meeting_date: string
+  agreements: string
+  follow_up_date: string | null
+  status: CommitmentStatus
+}
+
+export interface FamilySurvey {
+  id: number
+  period_id: number
+  study_hours_week: number
+  parent_education: string
+  home_internet: boolean
+  has_study_device: boolean
+  family_communication: number
+  student_works: boolean
+  household_size: number
+  submitted_at: string
 }
 
 /** Minimal data a list already has, enough to open the quick view instantly. */
