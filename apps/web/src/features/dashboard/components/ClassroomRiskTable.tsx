@@ -14,9 +14,11 @@ import { StudentChips } from './StudentChips'
 export function ClassroomRiskTable({
   classrooms,
   students,
+  onSelectStudent,
 }: {
   classrooms: ClassroomRiskSummary[]
   students: StudentRisk[]
+  onSelectStudent: (student: StudentRisk) => void
 }) {
   const [openId, setOpenId] = useState<number | null>(null)
 
@@ -73,7 +75,11 @@ export function ClassroomRiskTable({
                   <tr id={panelId}>
                     <td colSpan={3} className="bg-paper px-4 py-4">
                       {atRisk.length > 0 ? (
-                        <StudentChips students={atRisk} showClassroom={false} />
+                        <StudentChips
+                          students={atRisk}
+                          showClassroom={false}
+                          onSelect={onSelectStudent}
+                        />
                       ) : (
                         <p className="text-ink-soft">
                           No hay estudiantes en riesgo moderado o alto en esta aula.

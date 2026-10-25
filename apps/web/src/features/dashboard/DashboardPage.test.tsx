@@ -78,7 +78,15 @@ describe('DashboardPage', () => {
     expect(within(light).getByText('Ramírez Gutiérrez, Lucía')).toBeInTheDocument()
     expect(within(light).getByText('Córdova Gutiérrez, Daniela')).toBeInTheDocument()
     expect(within(light).getByText('17 estudiantes')).toBeInTheDocument()
-    expect(within(light).getByText('Gutiérrez García, Santiago')).not.toBeVisible()
+    expect(within(light).queryByText('Gutiérrez García, Santiago')).not.toBeInTheDocument()
+
+    await userEvent.setup().click(within(light).getByRole('button', { name: 'Ver lista' }))
+
+    expect(within(light).getByText('Gutiérrez García, Santiago')).toBeInTheDocument()
+    expect(within(light).getByRole('button', { name: 'Ocultar lista' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
     expect(screen.getByText('Asistencia')).toBeInTheDocument()
   })
 

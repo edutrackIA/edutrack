@@ -5,6 +5,8 @@ import { Button } from '../../../shared/ui/Button'
 import { EmptyState, ErrorMessage, LoadingState } from '../../../shared/ui/Feedback'
 import { PageHeader } from '../../../shared/ui/PageHeader'
 import { usePeriods } from '../../periods/api'
+import { StudentQuickView } from '../../students/components/StudentQuickView'
+import type { StudentReference } from '../../students/types'
 import { PeriodSelect } from '../../periods/PeriodSelect'
 import { downloadRiskReport, useDashboardSummary } from '../api'
 import { ClassroomRiskTable } from '../components/ClassroomRiskTable'
@@ -14,6 +16,7 @@ import { TopFactors } from '../components/TopFactors'
 
 export default function DashboardPage() {
   const [periodId, setPeriodId] = useState<number | null>(null)
+  const [selected, setSelected] = useState<StudentReference | null>(null)
   const summary = useDashboardSummary(periodId)
   const periods = usePeriods()
   const report = useMutation({ mutationFn: downloadRiskReport })
@@ -75,14 +78,24 @@ export default function DashboardPage() {
         <>
           <RiskOverview summary={data} periodLabel={periodLabel} />
           <div className="grid gap-8 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:grid-rows-[minmax(0,1fr)]">
-            <SchoolTrafficLight summary={data} />
+            <SchoolTrafficLight summary={data} onSelectStudent={setSelected} />
             <div className="flex flex-col gap-8 lg:min-h-0">
-              <ClassroomRiskTable classrooms={data.by_classroom} students={data.students} />
+              <ClassroomRiskTable
+                classrooms={data.by_classroom}
+                students={data.students}
+                onSelectStudent={setSelected}
+              />
               <TopFactors factors={data.top_factors} />
             </div>
           </div>
         </>
       )}
+
+      <StudentQuickView
+        student={selected}
+        periodId={activePeriod}
+        onClose={() => setSelected(null)}
+      />
     </div>
   )
 }
