@@ -1,4 +1,5 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
+import { useUnreadAlertsCount } from '../../features/alerts/api'
 import { useAuth } from '../../features/auth/auth-context'
 import { ROLE_LABELS } from '../../features/auth/roles'
 import { Button } from '../../shared/ui/Button'
@@ -7,6 +8,7 @@ import { NAV_ITEMS } from '../navigation'
 
 export function AppLayout() {
   const { user, logout } = useAuth()
+  const unreadAlerts = useUnreadAlertsCount(user?.role === 'TEACHER')
   if (!user) return null
 
   return (
@@ -39,6 +41,12 @@ export function AppLayout() {
                   }
                 >
                   {item.label}
+                  {item.to === '/alertas' && !!unreadAlerts.data && (
+                    <span className="ml-2 rounded-full bg-risk-high-mark px-2 py-0.5 text-xs font-bold text-white">
+                      {unreadAlerts.data}
+                      <span className="sr-only"> sin leer</span>
+                    </span>
+                  )}
                 </NavLink>
               </li>
             ))}

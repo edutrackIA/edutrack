@@ -9,6 +9,7 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
   DIRECTOR: [
     { to: '/resumen', label: 'Resumen' },
     { to: '/aulas', label: 'Aulas' },
+    { to: '/recomendaciones', label: 'Recomendaciones' },
   ],
   TEACHER: [
     { to: '/aulas', label: 'Mis aulas' },
