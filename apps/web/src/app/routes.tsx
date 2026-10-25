@@ -1,0 +1,91 @@
+import type { RouteObject } from 'react-router-dom'
+import { RequireAuth, RequireRole } from '../features/auth/guards'
+import LoginPage from '../features/auth/pages/LoginPage'
+import type { Role } from '../features/auth/types'
+import { AppLayout } from './layouts/AppLayout'
+import { HomeRedirect } from './pages/HomeRedirect'
+import { NotFoundPage } from './pages/NotFoundPage'
+import { PendingPage } from './pages/PendingPage'
+
+interface Section {
+  path: string
+  roles: Role[]
+  title: string
+  description: string
+}
+
+// Each section is replaced by its real page in the following frontend features.
+const SECTIONS: Section[] = [
+  {
+    path: 'resumen',
+    roles: ['DIRECTOR', 'ANALYST'],
+    title: 'Resumen del colegio',
+    description: 'Cómo está cada aula y qué explica el riesgo este bimestre.',
+  },
+  {
+    path: 'aulas',
+    roles: ['DIRECTOR', 'TEACHER', 'ANALYST'],
+    title: 'Aulas',
+    description: 'Estudiantes de cada aula con su nivel de riesgo.',
+  },
+  {
+    path: 'alertas',
+    roles: ['TEACHER'],
+    title: 'Alertas',
+    description: 'Estudiantes que necesitan seguimiento.',
+  },
+  {
+    path: 'recomendaciones',
+    roles: ['TEACHER', 'DIRECTOR'],
+    title: 'Recomendaciones',
+    description: 'Revisa y aprueba las sugerencias antes de enviarlas a las familias.',
+  },
+  {
+    path: 'evaluaciones',
+    roles: ['ANALYST'],
+    title: 'Evaluaciones de riesgo',
+    description: 'Ejecuta el análisis de un bimestre o de un aula.',
+  },
+  {
+    path: 'carga-de-datos',
+    roles: ['ANALYST'],
+    title: 'Carga de datos',
+    description: 'Importa estudiantes, notas y asistencia desde Excel o CSV.',
+  },
+  {
+    path: 'umbrales',
+    roles: ['ANALYST'],
+    title: 'Umbrales de riesgo',
+    description: 'Define desde qué probabilidad un caso es moderado o alto.',
+  },
+  {
+    path: 'mi-hijo',
+    roles: ['PARENT'],
+    title: 'Mi hijo',
+    description: 'Avance del bimestre y sugerencias para acompañarlo en casa.',
+  },
+]
+
+export const routes: RouteObject[] = [
+  { path: '/login', element: <LoginPage /> },
+  {
+    path: '/',
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
+    children: [
+      { index: true, element: <HomeRedirect /> },
+      ...SECTIONS.map((section) => ({
+        path: section.path,
+        element: (
+          <RequireRole roles={section.roles}>
+            <PendingPage title={section.title} description={section.description} />
+          </RequireRole>
+        ),
+      })),
+      { path: '*', element: <NotFoundPage /> },
+    ],
+  },
+]

@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Registro de día: papel claro y tinta azul. */
+  :root {
+    color-scheme: light;
+    --color-paper: 251 252 254;
+    --color-surface: 255 255 255;
+    --color-ink: 27 42 74;
+    --color-ink-soft: 74 88 120;
+    --color-rule: 217 225 238;
+    --color-accent: 36 87 197;
+    --color-accent-strong: 27 68 160;
+    --color-accent-tint: 232 238 251;
+    --color-on-accent: 255 255 255;
+    --color-risk-low: 30 107 66;
+    --color-risk-low-bg: 227 242 233;
+    --color-risk-low-mark: 46 139 87;
+    --color-risk-medium: 122 82 0;
+    --color-risk-medium-bg: 251 240 214;
+    --color-risk-medium-mark: 201 138 11;
+    --color-risk-high: 161 40 28;
+    --color-risk-high-bg: 250 227 224;
+    --color-risk-high-mark: 192 57 43;
+  }
+
+  /* Registro de noche: azul tinta profundo, sin negro puro, contraste AA. */
+  :root.dark {
+    color-scheme: dark;
+    --color-paper: 14 22 38;
+    --color-surface: 21 32 54;
+    --color-ink: 228 234 244;
+    --color-ink-soft: 162 176 198;
+    --color-rule: 43 59 88;
+    --color-accent: 138 174 247;
+    --color-accent-strong: 179 203 250;
+    --color-accent-tint: 29 45 80;
+    --color-on-accent: 14 22 38;
+    --color-risk-low: 134 214 168;
+    --color-risk-low-bg: 18 50 31;
+    --color-risk-low-mark: 76 191 133;
+    --color-risk-medium: 240 196 106;
+    --color-risk-medium-bg: 58 44 12;
+    --color-risk-medium-mark: 224 168 58;
+    --color-risk-high: 243 163 152;
+    --color-risk-high-bg: 64 26 21;
+    --color-risk-high-mark: 232 105 90;
+  }
+
+  html {
+    font-family: theme('fontFamily.sans');
+    background-color: rgb(var(--color-paper));
+    color: rgb(var(--color-ink));
+  }
+
+  body {
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 3px solid rgb(var(--color-accent));
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Hoja pautada del registro auxiliar: una línea cada 32 px. */
+  .bg-ruled {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 31px,
+      rgb(var(--color-rule)) 31px,
+      rgb(var(--color-rule)) 32px
+    );
+  }
+}

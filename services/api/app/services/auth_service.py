@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -43,7 +43,7 @@ class AuthService:
             raise UnauthorizedError("Invalid refresh token", code="INVALID_REFRESH_TOKEN")
 
         now = utcnow()
-        if stored.revoked_at is not None:
+        if stored.revoked_at is not None and not self._within_grace(stored, now):
             # A revoked token being reused suggests it was stolen: end every session.
             self.tokens.revoke_all_for_user(stored.user_id, now)
             self.db.commit()
@@ -55,10 +55,23 @@ class AuthService:
         if user is None or not user.is_active:
             raise UnauthorizedError("Invalid refresh token", code="INVALID_REFRESH_TOKEN")
 
-        stored.revoked_at = now
+        if stored.revoked_at is None:
+            stored.revoked_at = now
+            stored.rotated = True
         tokens = self._issue_tokens(user)
         self.db.commit()
         return tokens
+
+    def _within_grace(self, stored: RefreshToken, now: datetime) -> bool:
+        """A token rotated seconds ago is being reused by a concurrent request.
+
+        This happens when the page reloads before the new pair reaches the browser.
+        Only rotated tokens qualify: tokens revoked by logout never do.
+        """
+        if not stored.rotated or stored.revoked_at is None:
+            return False
+        grace = timedelta(seconds=self.settings.refresh_reuse_grace_seconds)
+        return now - stored.revoked_at <= grace
 
     def logout(self, user: User, raw_token: str) -> None:
         stored = self.tokens.get_by_hash(hash_token(raw_token))
