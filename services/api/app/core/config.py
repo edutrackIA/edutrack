@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_ttl_minutes: int = 15
     refresh_token_ttl_days: int = 7
+    refresh_reuse_grace_seconds: int = 30
     bcrypt_rounds: int = 12
 
     smtp_host: str = "localhost"
