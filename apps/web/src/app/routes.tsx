@@ -11,6 +11,8 @@ import { LoadingState } from '../shared/ui/Feedback'
 
 // Pages load on demand: each role only downloads the screens it uses.
 const DashboardPage = lazy(() => import('../features/dashboard/pages/DashboardPage'))
+const ClassroomsPage = lazy(() => import('../features/classrooms/pages/ClassroomsPage'))
+const StudentRecordPage = lazy(() => import('../features/students/pages/StudentRecordPage'))
 
 interface Section {
   path: string
@@ -34,6 +36,7 @@ const SECTIONS: Section[] = [
     roles: ['DIRECTOR', 'TEACHER', 'ANALYST'],
     title: 'Aulas',
     description: 'Estudiantes de cada aula con su nivel de riesgo.',
+    page: ClassroomsPage,
   },
   {
     path: 'alertas',
@@ -98,6 +101,16 @@ export const routes: RouteObject[] = [
           </RequireRole>
         ),
       })),
+      {
+        path: 'estudiantes/:studentId',
+        element: (
+          <RequireRole roles={['DIRECTOR', 'TEACHER', 'ANALYST']}>
+            <Suspense fallback={<LoadingState />}>
+              <StudentRecordPage />
+            </Suspense>
+          </RequireRole>
+        ),
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
