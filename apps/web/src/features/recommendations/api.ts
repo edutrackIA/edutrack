@@ -13,6 +13,8 @@ export interface ReviewItem {
   reviewed_at: string | null
   sent_at: string | null
   created_at: string
+  /** Guardians with an email who can receive the message. */
+  family_contacts: number
 }
 
 export function useRecommendationQueue(status: RecommendationStatus) {

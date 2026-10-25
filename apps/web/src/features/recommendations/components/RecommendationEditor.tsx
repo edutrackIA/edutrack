@@ -61,12 +61,17 @@ function ItemField({
   )
 }
 
+export interface Notice {
+  text: string
+  tone: 'success' | 'warning'
+}
+
 export function RecommendationEditor({
   recommendation,
   onDone,
 }: {
   recommendation: ReviewItem
-  onDone: (message: string) => void
+  onDone: (notice: Notice) => void
 }) {
   const [items, setItems] = useState(recommendation.parent_items)
   const [confirmingDiscard, setConfirmingDiscard] = useState(false)
@@ -91,12 +96,24 @@ export function RecommendationEditor({
     approve.mutate(
       { id: recommendation.id, items: dirty ? cleaned : undefined },
       {
-        onSuccess: (item) =>
-          onDone(
-            item.sent_at
-              ? `Recomendación de ${student.full_name} aprobada y enviada a la familia.`
-              : `Recomendación de ${student.full_name} aprobada. El correo no se pudo enviar; puedes reenviarlo desde Aprobadas.`,
-          ),
+        onSuccess: (item) => {
+          if (item.sent_at) {
+            onDone({
+              tone: 'success',
+              text: `Recomendación de ${student.full_name} aprobada y enviada a la familia.`,
+            })
+          } else if (item.family_contacts === 0) {
+            onDone({
+              tone: 'warning',
+              text: `Recomendación de ${student.full_name} aprobada, pero no se envió ningún correo: no tiene un apoderado con correo registrado.`,
+            })
+          } else {
+            onDone({
+              tone: 'warning',
+              text: `Recomendación de ${student.full_name} aprobada, pero el correo no se pudo enviar. Puedes reenviarlo desde Aprobadas.`,
+            })
+          }
+        },
       },
     )
   }
@@ -172,6 +189,13 @@ export function RecommendationEditor({
 
       {error && <ErrorMessage>{messageFor(error)}</ErrorMessage>}
 
+      {pending && recommendation.family_contacts === 0 && (
+        <p className="rounded-md bg-risk-medium-bg px-4 py-3 text-risk-medium">
+          {student.full_name} no tiene un apoderado con correo registrado. Puedes aprobar la
+          recomendación, pero no se enviará ningún correo.
+        </p>
+      )}
+
       {pending && (
         <footer className="flex flex-wrap items-center gap-3 border-t border-rule pt-5">
           <Button pending={approve.isPending} disabled={busy || cleaned.length === 0} onClick={handleApprove}>
@@ -185,7 +209,7 @@ export function RecommendationEditor({
               onClick={() =>
                 save.mutate(
                   { id: recommendation.id, items: cleaned },
-                  { onSuccess: () => onDone('Cambios guardados.') },
+                  { onSuccess: () => onDone({ tone: 'success', text: 'Cambios guardados.' }) },
                 )
               }
             >
@@ -202,7 +226,10 @@ export function RecommendationEditor({
                 onClick={() =>
                   discard.mutate(recommendation.id, {
                     onSuccess: () =>
-                      onDone(`Recomendación de ${student.full_name} descartada.`),
+                      onDone({
+                        tone: 'success',
+                        text: `Recomendación de ${student.full_name} descartada.`,
+                      }),
                   })
                 }
               >
@@ -226,6 +253,10 @@ export function RecommendationEditor({
             <p className="text-ink-soft">
               Enviada a la familia el {formatDate(recommendation.sent_at)}.
             </p>
+          ) : recommendation.family_contacts === 0 ? (
+            <p className="text-risk-medium">
+              No se envió: el estudiante no tiene un apoderado con correo registrado.
+            </p>
           ) : (
             <>
               <p className="text-ink-soft">Aprobada, pero el correo aún no se envió.</p>
@@ -234,7 +265,8 @@ export function RecommendationEditor({
                 pending={resend.isPending}
                 onClick={() =>
                   resend.mutate(recommendation.id, {
-                    onSuccess: () => onDone('Correo enviado a la familia.'),
+                    onSuccess: () =>
+                      onDone({ tone: 'success', text: 'Correo enviado a la familia.' }),
                   })
                 }
               >

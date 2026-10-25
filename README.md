@@ -89,6 +89,24 @@ docker compose restart ml
 
 El comando muestra F1, ROC-AUC, precisión, recall y la matriz de confusión, y verifica el umbral de calidad (F1 ≥ 0.75 y ROC-AUC > 0.80). El modelo queda en `services/ml/models/`, y su versión y métricas se pueden consultar en `GET http://localhost:8001/v1/model`.
 
+### Tareas programadas
+
+El contenedor `worker` envía los correos automáticos (hora de Lima):
+
+| Tarea | Cuándo | Qué hace |
+|---|---|---|
+| `checkin-reminders` | Viernes 09:00 | Recuerda al tutor completar el seguimiento semanal |
+| `missed-checkins` | Domingo 20:00 | Avisa que la semana cerró sin seguimiento; tras 2 semanas, avisa al director |
+| `weekly-attendance` | Sábado 10:00 | Resumen de faltas y tardanzas de la semana a las familias |
+| `perfect-attendance` | Día 1, 08:00 | Reconoce la asistencia perfecta del mes anterior |
+| `period-grades` | Diario, 07:00 | Notas del bimestre cuando este termina |
+
+Si el estudiante tiene una situación sensible activa, el mensaje se retiene para que el tutor lo revise. Para ejecutar una tarea al instante:
+
+```bash
+docker compose exec worker python -m app.worker run weekly-attendance --date 2026-08-08
+```
+
 Para levantar también el frontend compilado detrás de Nginx: `docker compose --profile full up --build` y abrir http://localhost:8080.
 
 ## Tests

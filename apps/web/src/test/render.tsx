@@ -47,6 +47,7 @@ export function renderPage(
   const auth = {
     status: user ? ('authenticated' as const) : ('anonymous' as const),
     user: user ?? null,
+    sessionExpired: false,
     login: async () => {
       throw new Error('login is not available in page tests')
     },

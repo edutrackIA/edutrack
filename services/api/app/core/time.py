@@ -23,3 +23,11 @@ def week_start(day: date) -> date:
 def week_deadline(start: date) -> date:
     """Last day a weekly check-in can be edited: Saturday of that week."""
     return start + timedelta(days=5)
+
+
+def month_start(day: date) -> date:
+    return day.replace(day=1)
+
+
+def previous_month_start(day: date) -> date:
+    return month_start(month_start(day) - timedelta(days=1))

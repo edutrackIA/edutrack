@@ -43,6 +43,7 @@ describe('WeeklyFollowUpPage', () => {
       'GET /classrooms/1/checkins/current': () => json(PENDING),
       'GET /classrooms/1/students': () => json(STUDENTS),
       'GET /classrooms/1/situations': () => json([GRIEF]),
+      'GET /family-messages/held': () => json([]),
       'GET /situations/catalog': () => json(CATALOG),
       'POST /students/6/situations': (init) => {
         bodies.push(JSON.parse(String(init?.body)))
@@ -96,11 +97,56 @@ describe('WeeklyFollowUpPage', () => {
       'GET /classrooms/1/checkins/current': () => json({ ...PENDING, editable: false }),
       'GET /classrooms/1/students': () => json(STUDENTS),
       'GET /classrooms/1/situations': () => json([]),
+      'GET /family-messages/held': () => json([]),
     })
 
     renderPage(<WeeklyFollowUpPage />, { user: TEACHER_USER })
 
     expect(await screen.findByText(/La semana ya cerró/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Confirmar seguimiento de la semana' })).toBeDisabled()
+  })
+
+  it('lets the tutor send or discard held automatic messages', async () => {
+    const actions: string[] = []
+    let held = [
+      {
+        id: 7,
+        student: STUDENTS[0],
+        kind: 'WEEKLY_ATTENDANCE',
+        kind_label: 'Asistencia semanal',
+        reference_date: '2026-10-26',
+        status: 'HELD',
+        subject: 'Asistencia de Lucía',
+        intro: 'Le compartimos el resumen de asistencia de Lucía.',
+        rows: [['Faltas', '3 (lunes 26, martes 27, miércoles 28)']],
+        hold_reason: 'Situación activa: Problema de salud',
+        created_at: '2026-10-31T10:00:00',
+        sent_at: null,
+      },
+    ]
+    mockApi({
+      'GET /classrooms': () => json(CLASSROOMS),
+      'GET /classrooms/1/checkins/current': () => json(PENDING),
+      'GET /classrooms/1/students': () => json(STUDENTS),
+      'GET /classrooms/1/situations': () => json([]),
+      'GET /family-messages/held': () => json(held),
+      'POST /family-messages/7/release': () => {
+        actions.push('release')
+        held = []
+        return json({ id: 7, status: 'SENT' })
+      },
+    })
+    renderPage(<WeeklyFollowUpPage />, { user: TEACHER_USER })
+
+    const section = await screen.findByRole('region', { name: 'Mensajes automáticos retenidos (1)' })
+    expect(within(section).getByText(/Situación activa: Problema de salud/)).toBeInTheDocument()
+    await userEvent
+      .setup()
+      .click(within(section).getByRole('button', { name: /Enviar a la familia/ }))
+
+    await vi.waitFor(() => expect(actions).toEqual(['release']))
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('region', { name: /Mensajes automáticos retenidos/ })).not.toBeInTheDocument(),
+    )
   })
 })

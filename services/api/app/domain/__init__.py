@@ -6,6 +6,8 @@ from app.domain.course_assignment import CourseAssignment
 from app.domain.enums import (
     AttendanceStatus,
     CommitmentStatus,
+    FamilyMessageKind,
+    FamilyMessageStatus,
     ImportKind,
     ImportStatus,
     ParentEducation,
@@ -20,6 +22,7 @@ from app.domain.family_survey import FamilySurvey
 from app.domain.grade import BehaviorRecord, Grade
 from app.domain.import_job import ImportJob
 from app.domain.institution import Institution
+from app.domain.messaging import FamilyMessage, NotificationLog
 from app.domain.recommendation import Alert, Recommendation
 from app.domain.refresh_token import RefreshToken
 from app.domain.risk import RiskAssessment, RiskThreshold
@@ -38,6 +41,9 @@ __all__ = [
     "Commitment",
     "CommitmentStatus",
     "CourseAssignment",
+    "FamilyMessage",
+    "FamilyMessageKind",
+    "FamilyMessageStatus",
     "FamilySurvey",
     "Grade",
     "Guardianship",
@@ -45,6 +51,7 @@ __all__ = [
     "ImportKind",
     "ImportStatus",
     "Institution",
+    "NotificationLog",
     "ParentEducation",
     "Recommendation",
     "RecommendationStatus",

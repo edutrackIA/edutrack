@@ -5,6 +5,7 @@ from app.api.routes import (
     classrooms,
     commitments,
     dashboard,
+    family_messages,
     health,
     imports,
     periods,
@@ -28,3 +29,4 @@ api_router.include_router(settings.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(periods.router)
 api_router.include_router(situations.router)
+api_router.include_router(family_messages.router)

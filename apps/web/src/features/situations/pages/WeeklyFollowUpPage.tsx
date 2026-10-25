@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '../../../shared/ui/Table'
 import { useAuth } from '../../auth/auth-context'
+import { HeldMessages } from '../../family-messages/components/HeldMessages'
 import { classroomLabel, useClassrooms, useClassroomStudents, type Classroom } from '../../classrooms/api'
 import { useCheckin, useClassroomSituations, useCompleteCheckin, type Checkin } from '../api'
 import { SituationChip } from '../components/SituationChip'
@@ -189,7 +190,12 @@ export default function WeeklyFollowUpPage() {
           description="El seguimiento semanal lo completa el tutor de cada aula."
         />
       )}
-      {selected && <ClassroomFollowUp key={selected.id} classroom={selected} />}
+      {selected && (
+        <div className="flex flex-col gap-6 lg:min-h-0 lg:flex-1">
+          <HeldMessages />
+          <ClassroomFollowUp key={selected.id} classroom={selected} />
+        </div>
+      )}
     </div>
   )
 }

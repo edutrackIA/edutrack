@@ -79,6 +79,19 @@ describe('authentication', () => {
     expect(router.state.location.pathname).toBe('/mi-hijo')
   })
 
+  it('explains on the login page that the session expired', async () => {
+    setTokens(TOKENS)
+    mockApi({
+      'GET /auth/me': () => json({ code: 'UNAUTHORIZED', message: 'Expired' }, 401),
+      'POST /auth/refresh': () => json({ code: 'INVALID_REFRESH_TOKEN' }, 401),
+    })
+
+    const router = renderApp('/aulas')
+
+    expect(await screen.findByText(/Tu sesión expiró/)).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/login')
+  })
+
   it('blocks sections that do not belong to the role', async () => {
     setTokens(TOKENS)
     mockApi({

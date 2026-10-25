@@ -4,6 +4,8 @@ import type { User } from './types'
 export interface AuthContextValue {
   status: 'loading' | 'anonymous' | 'authenticated'
   user: User | null
+  /** True when the session ended on its own (expired), not by logging out. */
+  sessionExpired: boolean
   login: (email: string, password: string) => Promise<User>
   logout: () => Promise<void>
 }

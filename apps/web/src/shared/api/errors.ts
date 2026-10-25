@@ -8,7 +8,9 @@ const MESSAGES: Record<string, string> = {
   VALIDATION_ERROR: 'Revisa los datos ingresados.',
   CONFLICT: 'Esta acción ya se había realizado.',
   ML_SERVICE_UNAVAILABLE: 'El servicio de análisis no está disponible. Inténtalo en unos minutos.',
-  EMAIL_NOT_SENT: 'No se pudo enviar el correo. Inténtalo de nuevo.',
+  EMAIL_NOT_SENT: 'El servidor de correo no respondió. Inténtalo de nuevo en unos minutos.',
+  NO_FAMILY_CONTACT:
+    'El estudiante no tiene un apoderado con correo registrado, así que no hay a quién enviarlo.',
   FILE_TOO_LARGE: 'El archivo es demasiado grande. El límite es de 2 MB.',
   UNSUPPORTED_FILE_TYPE: 'Solo se aceptan archivos .csv o .xlsx.',
 }

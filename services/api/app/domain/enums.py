@@ -82,3 +82,16 @@ class SituationAction(StrEnum):
     UPDATED = "UPDATED"
     RESOLVED = "RESOLVED"
     REOPENED = "REOPENED"
+
+
+class FamilyMessageKind(StrEnum):
+    WEEKLY_ATTENDANCE = "WEEKLY_ATTENDANCE"
+    PERFECT_ATTENDANCE = "PERFECT_ATTENDANCE"
+    PERIOD_GRADES = "PERIOD_GRADES"
+
+
+class FamilyMessageStatus(StrEnum):
+    SENT = "SENT"
+    HELD = "HELD"
+    FAILED = "FAILED"
+    DISCARDED = "DISCARDED"
