@@ -106,9 +106,7 @@ def test_resolve_and_reopen_keep_an_audit_trail(
     assert active == []
     assert len(history) == 1
     assert reopened["resolved_on"] is None
-    actions = db_session.scalars(
-        select(SituationEvent.action).order_by(SituationEvent.id)
-    ).all()
+    actions = db_session.scalars(select(SituationEvent.action).order_by(SituationEvent.id)).all()
     assert actions == [
         SituationAction.CREATED,
         SituationAction.UPDATED,

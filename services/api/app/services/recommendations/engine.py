@@ -170,9 +170,7 @@ def compose(rules: list[Rule], facts: Facts) -> Composition:
     chosen = first("empathy") + first("opening") + first("strength") + actions + first("closing")
     # Rotate between phrasings across periods so families do not read the same text.
     parent_items = list(
-        dict.fromkeys(
-            _render(rule.family[facts.seed % len(rule.family)], facts) for rule in chosen
-        )
+        dict.fromkeys(_render(rule.family[facts.seed % len(rule.family)], facts) for rule in chosen)
     )
     teacher_items = list(
         dict.fromkeys(_render(rule.tutor, facts) for rule in matched if rule.tutor)

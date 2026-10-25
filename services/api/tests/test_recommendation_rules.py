@@ -112,9 +112,7 @@ def test_invalid_rules_are_rejected() -> None:
 def test_severity_picks_the_most_specific_attendance_rule() -> None:
     moderate = message(facts(attendance_rate=0.86))
     severe = message(facts(attendance_rate=0.7))
-    pattern = message(
-        facts(attendance_rate=0.7, absences=5, monday_friday_absence_share=0.8)
-    )
+    pattern = message(facts(attendance_rate=0.7, absences=5, monday_friday_absence_share=0.8))
 
     assert any("asegurar su asistencia" in item or "cada clase cuenta" in item for item in moderate)
     assert any("faltó a muchas clases" in item for item in severe)
@@ -153,7 +151,9 @@ def test_phrasings_rotate_between_periods() -> None:
 def test_sudden_drop_of_a_good_student() -> None:
     items = message(facts(previous_avg_score=16.0, score_trend=-3.0))
 
-    assert any(item.startswith("Cambio reciente: Lucía solía tener muy buenas notas") for item in items)
+    assert any(
+        item.startswith("Cambio reciente: Lucía solía tener muy buenas notas") for item in items
+    )
 
 
 def test_improvement_is_celebrated_and_persistent_cases_escalate() -> None:
@@ -208,9 +208,7 @@ def test_team_situations_never_reach_the_family() -> None:
 
 
 def test_home_responsibilities_avoid_asking_for_more_study_time_at_home() -> None:
-    items = message(
-        facts(study_hours_week=2, situations=(SituationKind.HOME_RESPONSIBILITIES,))
-    )
+    items = message(facts(study_hours_week=2, situations=(SituationKind.HOME_RESPONSIBILITIES,)))
 
     assert any(item.startswith("Tiempo de estudio:") for item in items)
     assert not any(item.startswith("Hábitos de estudio:") for item in items)

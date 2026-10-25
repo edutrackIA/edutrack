@@ -1,8 +1,8 @@
 from app.domain.academic_period import AcademicPeriod
 from app.domain.attendance import Attendance
 from app.domain.classroom import Classroom
-from app.domain.course_assignment import CourseAssignment
 from app.domain.commitment import Commitment
+from app.domain.course_assignment import CourseAssignment
 from app.domain.enums import (
     AttendanceStatus,
     CommitmentStatus,

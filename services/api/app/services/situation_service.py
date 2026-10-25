@@ -130,7 +130,9 @@ class SituationService:
         )
 
     def _log(self, situation: StudentSituation, action: SituationAction, user: User) -> None:
-        self.situations.log(SituationEvent(situation_id=situation.id, action=action, user_id=user.id))
+        self.situations.log(
+            SituationEvent(situation_id=situation.id, action=action, user_id=user.id)
+        )
 
     def _get_student(self, student_id: int) -> Student:
         student = self.students.get(student_id)

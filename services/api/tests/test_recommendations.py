@@ -155,9 +155,7 @@ def test_tutor_can_discard(client: TestClient, assessed_school: School) -> None:
     assert response.json()["status"] == "DISCARDED"
 
 
-def test_only_the_tutor_or_director_can_review(
-    client: TestClient, assessed_school: School
-) -> None:
+def test_only_the_tutor_or_director_can_review(client: TestClient, assessed_school: School) -> None:
     school = assessed_school
     item = recommendation_for(client, school, school.student_a.id)
 
@@ -221,13 +219,20 @@ def test_student_recommendations_are_staff_only(
 
     assert len(client.get(url, headers=auth(school.director)).json()) == 1
     assert client.get(url, headers=auth(school.parent)).status_code == 403
-    assert client.get("/api/v1/students/9999/recommendations", headers=auth(school.director)).status_code == 404
+    assert (
+        client.get(
+            "/api/v1/students/9999/recommendations", headers=auth(school.director)
+        ).status_code
+        == 404
+    )
 
 
 # --- Alertas ---------------------------------------------------------------
 
 
-def test_mark_alert_as_read(client: TestClient, assessed_school: School, db_session: Session) -> None:
+def test_mark_alert_as_read(
+    client: TestClient, assessed_school: School, db_session: Session
+) -> None:
     school = assessed_school
     alert = client.get("/api/v1/alerts", headers=auth(school.teacher)).json()["items"][0]
 
