@@ -1,0 +1,63 @@
+import type { User } from '../auth/types'
+import type { RiskLevel } from '../../shared/lib/risk'
+
+export interface RiskFactor {
+  feature: string
+  label: string
+  value: unknown
+  contribution: number
+}
+
+export interface RiskAssessment {
+  id: number
+  period_id: number
+  probability: number
+  level: RiskLevel
+  model_version: string
+  top_factors: RiskFactor[]
+  created_at: string
+}
+
+export interface StudentDetail {
+  id: number
+  code: string
+  first_name: string
+  last_name: string
+  birth_date: string
+  sex: 'M' | 'F'
+  classroom_id: number
+  guardians: User[]
+  latest_risk: RiskAssessment | null
+}
+
+export interface Grade {
+  subject_id: number
+  subject: string
+  period_id: number
+  score: number
+}
+
+export interface StudentSummary {
+  period_id: number | null
+  average_score: number | null
+  attendance_rate: number | null
+  grades: Grade[]
+}
+
+export type RecommendationStatus = 'PENDING_REVIEW' | 'APPROVED' | 'DISCARDED'
+
+export interface Recommendation {
+  id: number
+  period_id: number
+  status: RecommendationStatus
+  sent_at: string | null
+  created_at: string
+}
+
+/** Minimal data a list already has, enough to open the quick view instantly. */
+export interface StudentReference {
+  student_id: number
+  full_name: string
+  code: string
+  classroom: string
+}
