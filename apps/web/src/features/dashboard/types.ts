@@ -15,6 +15,16 @@ export interface FactorFrequency {
   frequency: number
 }
 
+export interface StudentRisk {
+  student_id: number
+  code: string
+  full_name: string
+  classroom_id: number
+  classroom: string
+  level: RiskLevel
+  probability: number
+}
+
 export interface DashboardSummary {
   period_id: number | null
   period_label: string | null
@@ -23,4 +33,5 @@ export interface DashboardSummary {
   by_level: Record<RiskLevel, number>
   by_classroom: ClassroomRiskSummary[]
   top_factors: FactorFrequency[]
+  students: StudentRisk[]
 }

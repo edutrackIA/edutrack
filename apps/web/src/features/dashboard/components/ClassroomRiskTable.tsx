@@ -1,3 +1,4 @@
+import { Fragment, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -6,68 +7,93 @@ import {
   TableHeaderCell,
   TableRow,
 } from '../../../shared/ui/Table'
-import type { ClassroomRiskSummary } from '../types'
+import type { ClassroomRiskSummary, StudentRisk } from '../types'
+import { MiniTrafficLight } from './MiniTrafficLight'
+import { StudentChips } from './StudentChips'
 
-/** Visual proportion only: the exact numbers are in the neighbouring columns. */
-function DistributionBar({ classroom }: { classroom: ClassroomRiskSummary }) {
-  const total = classroom.evaluated
-  if (total === 0) return <span className="text-sm text-ink-soft">Sin evaluar</span>
+export function ClassroomRiskTable({
+  classrooms,
+  students,
+  onSelectStudent,
+}: {
+  classrooms: ClassroomRiskSummary[]
+  students: StudentRisk[]
+  onSelectStudent: (student: StudentRisk) => void
+}) {
+  const [openId, setOpenId] = useState<number | null>(null)
 
-  const segments = [
-    { value: classroom.high, className: 'bg-risk-high-mark' },
-    { value: classroom.medium, className: 'bg-risk-medium-mark' },
-    { value: classroom.low, className: 'bg-risk-low-mark' },
-  ]
   return (
-    <div aria-hidden="true" className="flex h-2.5 w-40 overflow-hidden rounded-full bg-rule">
-      {segments.map(
-        (segment, index) =>
-          segment.value > 0 && (
-            <span
-              key={index}
-              className={segment.className}
-              style={{ width: `${(segment.value / total) * 100}%` }}
-            />
-          ),
-      )}
-    </div>
-  )
-}
-
-export function ClassroomRiskTable({ classrooms }: { classrooms: ClassroomRiskSummary[] }) {
-  return (
-    <section aria-labelledby="classrooms-title">
-      <h2 id="classrooms-title" className="mb-4 font-figure text-xl font-semibold text-ink">
+    <section aria-labelledby="classrooms-title" className="flex flex-col lg:min-h-0">
+      <h2 id="classrooms-title" className="mb-3 shrink-0 font-figure text-xl font-semibold text-ink">
         Por aula
       </h2>
-      <Table caption="Estudiantes por nivel de riesgo en cada aula">
+      <div className="lg:min-h-0 lg:overflow-y-auto">
+        <Table caption="Semáforo de cada aula">
         <TableHead>
           <tr>
             <TableHeaderCell>Aula</TableHeaderCell>
-            <TableHeaderCell>Distribución</TableHeaderCell>
-            <TableHeaderCell className="text-right">Alto</TableHeaderCell>
-            <TableHeaderCell className="text-right">Moderado</TableHeaderCell>
-            <TableHeaderCell className="text-right">Bajo</TableHeaderCell>
+            <TableHeaderCell>Semáforo</TableHeaderCell>
             <TableHeaderCell className="text-right">Evaluados</TableHeaderCell>
           </tr>
         </TableHead>
         <TableBody>
-          {classrooms.map((classroom) => (
-            <TableRow key={classroom.classroom_id}>
-              <TableCell className="font-bold">{classroom.label}</TableCell>
-              <TableCell>
-                <DistributionBar classroom={classroom} />
-              </TableCell>
-              <TableCell className="text-right tabular-nums">{classroom.high}</TableCell>
-              <TableCell className="text-right tabular-nums">{classroom.medium}</TableCell>
-              <TableCell className="text-right tabular-nums">{classroom.low}</TableCell>
-              <TableCell className="text-right tabular-nums text-ink-soft">
-                {classroom.evaluated}
-              </TableCell>
-            </TableRow>
-          ))}
+          {classrooms.map((classroom) => {
+            const open = openId === classroom.classroom_id
+            const panelId = `aula-${classroom.classroom_id}`
+            const atRisk = students.filter(
+              (student) => student.classroom_id === classroom.classroom_id && student.level !== 'LOW',
+            )
+            return (
+              <Fragment key={classroom.classroom_id}>
+                <TableRow>
+                  <TableCell>
+                    <button
+                      type="button"
+                      aria-expanded={open}
+                      aria-controls={panelId}
+                      onClick={() => setOpenId(open ? null : classroom.classroom_id)}
+                      className="flex items-center gap-2 font-bold text-ink hover:text-accent"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 10 10"
+                        className={`h-2.5 w-2.5 transition-transform ${open ? 'rotate-90' : ''}`}
+                      >
+                        <path d="M3 1 8 5 3 9Z" fill="currentColor" />
+                      </svg>
+                      {classroom.label}
+                    </button>
+                  </TableCell>
+                  <TableCell>
+                    <MiniTrafficLight classroom={classroom} />
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-ink-soft">
+                    {classroom.evaluated}
+                  </TableCell>
+                </TableRow>
+                {open && (
+                  <tr id={panelId}>
+                    <td colSpan={3} className="bg-paper px-4 py-4">
+                      {atRisk.length > 0 ? (
+                        <StudentChips
+                          students={atRisk}
+                          showClassroom={false}
+                          onSelect={onSelectStudent}
+                        />
+                      ) : (
+                        <p className="text-ink-soft">
+                          No hay estudiantes en riesgo moderado o alto en esta aula.
+                        </p>
+                      )}
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            )
+          })}
         </TableBody>
-      </Table>
+        </Table>
+      </div>
     </section>
   )
 }

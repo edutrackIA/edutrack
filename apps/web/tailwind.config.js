@@ -11,6 +11,7 @@ export default {
         surface: token('surface'),
         ink: { DEFAULT: token('ink'), soft: token('ink-soft') },
         rule: token('rule'),
+        housing: token('housing'),
         accent: {
           DEFAULT: token('accent'),
           strong: token('accent-strong'),

@@ -10,7 +10,7 @@ export function AppLayout() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[15rem_1fr]">
+    <div className="min-h-screen lg:grid lg:h-screen lg:grid-cols-[15rem_1fr] lg:overflow-hidden">
       <a
         href="#contenido"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded-md focus:bg-surface focus:px-4 focus:py-2"
@@ -18,7 +18,7 @@ export function AppLayout() {
         Saltar al contenido
       </a>
 
-      <aside className="border-b border-rule bg-surface lg:border-b-0 lg:border-r">
+      <aside className="border-b border-rule bg-surface lg:overflow-y-auto lg:border-b-0 lg:border-r">
         <div className="px-6 pb-2 pt-5 lg:pb-6 lg:pt-8">
           <Link to="/" className="font-figure text-2xl font-semibold text-ink">
             EduTrack
@@ -46,8 +46,8 @@ export function AppLayout() {
         </nav>
       </aside>
 
-      <div className="flex min-w-0 flex-col">
-        <header className="flex flex-wrap items-center justify-end gap-4 border-b border-rule bg-surface px-6 py-3">
+      <div className="flex min-w-0 flex-col lg:min-h-0">
+        <header className="flex shrink-0 flex-wrap items-center justify-end gap-4 border-b border-rule bg-surface px-6 py-3">
           <ThemeToggle />
           <div className="text-right">
             <p className="font-bold text-ink">{user.full_name}</p>
@@ -57,9 +57,12 @@ export function AppLayout() {
             Cerrar sesión
           </Button>
         </header>
-        <main id="contenido" className="mx-auto w-full max-w-6xl flex-1 px-6 py-8 lg:px-10">
-          <Outlet />
-        </main>
+        {/* Pages scroll inside this area, never the whole window. */}
+        <div className="flex-1 lg:min-h-0 lg:overflow-y-auto">
+          <main id="contenido" className="mx-auto w-full max-w-7xl px-6 py-6 lg:h-full lg:px-10">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   )

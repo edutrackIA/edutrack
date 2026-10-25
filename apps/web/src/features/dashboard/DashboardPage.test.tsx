@@ -25,6 +25,31 @@ const SUMMARY: DashboardSummary = {
     { feature: 'attendance_rate', label: 'Asistencia', frequency: 3 },
     { feature: 'avg_score', label: 'Promedio', frequency: 1 },
   ],
+  students: [
+    student(6, 'Ramírez Gutiérrez, Lucía', 1, '3° A', 'HIGH', 0.94),
+    student(7, 'Gutiérrez Ramírez, Sebastián', 1, '3° A', 'HIGH', 0.93),
+    student(8, 'Córdova Gutiérrez, Daniela', 1, '3° A', 'MEDIUM', 0.42),
+    student(15, 'Gutiérrez García, Santiago', 2, '3° B', 'LOW', 0.08),
+  ],
+}
+
+function student(
+  id: number,
+  name: string,
+  classroomId: number,
+  classroom: string,
+  level: 'LOW' | 'MEDIUM' | 'HIGH',
+  probability: number,
+) {
+  return {
+    student_id: id,
+    code: `2026${String(id).padStart(4, '0')}`,
+    full_name: name,
+    classroom_id: classroomId,
+    classroom,
+    level,
+    probability,
+  }
 }
 
 describe('DashboardPage', () => {
@@ -37,7 +62,7 @@ describe('DashboardPage', () => {
     vi.restoreAllMocks()
   })
 
-  it('summarizes the period in a sentence and per classroom', async () => {
+  it('summarizes the period in a sentence and a traffic light with names', async () => {
     mockApi({
       'GET /dashboard/summary': () => json(SUMMARY),
       'GET /periods': () => json(PERIODS),
@@ -49,19 +74,39 @@ describe('DashboardPage', () => {
       await screen.findByText('3 de 20 estudiantes necesitan acompañamiento este bimestre.'),
     ).toBeInTheDocument()
     expect(screen.getByText(/1 estudiante aún no tiene evaluación/)).toBeInTheDocument()
-    const table = screen.getByRole('table', { name: 'Estudiantes por nivel de riesgo en cada aula' })
-    const firstRow = within(table).getAllByRole('row')[1]
-    expect(within(firstRow).getByText('3° A')).toBeInTheDocument()
-    expect(within(firstRow).getAllByRole('cell').map((cell) => cell.textContent)).toEqual([
-      '3° A',
-      '',
-      '2',
-      '1',
-      '7',
-      '10',
-    ])
+    const light = screen.getByRole('region', { name: 'Semáforo del colegio' })
+    expect(within(light).getByText('Ramírez Gutiérrez, Lucía')).toBeInTheDocument()
+    expect(within(light).getByText('Córdova Gutiérrez, Daniela')).toBeInTheDocument()
+    expect(within(light).getByText('17 estudiantes')).toBeInTheDocument()
+    expect(within(light).queryByText('Gutiérrez García, Santiago')).not.toBeInTheDocument()
+
+    await userEvent.setup().click(within(light).getByRole('button', { name: 'Ver lista' }))
+
+    expect(within(light).getByText('Gutiérrez García, Santiago')).toBeInTheDocument()
+    expect(within(light).getByRole('button', { name: 'Ocultar lista' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
     expect(screen.getByText('Asistencia')).toBeInTheDocument()
-    expect(screen.getByText('3 estudiantes')).toBeInTheDocument()
+  })
+
+  it('opens a classroom to show its students at risk', async () => {
+    mockApi({
+      'GET /dashboard/summary': () => json(SUMMARY),
+      'GET /periods': () => json(PERIODS),
+    })
+    renderPage(<DashboardPage />)
+    const user = userEvent.setup()
+    const table = await screen.findByRole('table', { name: 'Semáforo de cada aula' })
+
+    expect(within(table).getByText('2 alto, 1 moderado, 7 bajo')).toBeInTheDocument()
+    await user.click(within(table).getByRole('button', { name: '3° A' }))
+    expect(within(table).getByText('Gutiérrez Ramírez, Sebastián')).toBeInTheDocument()
+
+    await user.click(within(table).getByRole('button', { name: '3° B' }))
+    expect(
+      within(table).getByText('No hay estudiantes en riesgo moderado o alto en esta aula.'),
+    ).toBeInTheDocument()
   })
 
   it('invites to run an assessment when there is none', async () => {
@@ -74,6 +119,28 @@ describe('DashboardPage', () => {
 
     expect(await screen.findByText('Aún no hay evaluaciones de riesgo')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Descargar reporte PDF' })).not.toBeInTheDocument()
+  })
+
+  it('tells when the chosen period has not been assessed', async () => {
+    mockApi({
+      'GET /dashboard/summary': () =>
+        json({
+          ...SUMMARY,
+          period_id: 2,
+          evaluated_students: 0,
+          by_level: { LOW: 0, MEDIUM: 0, HIGH: 0 },
+          students: [],
+        }),
+      'GET /periods': () => json(PERIODS),
+    })
+
+    renderPage(<DashboardPage />)
+
+    expect(
+      await screen.findByText('Bimestre 2, 2026 aún no tiene evaluación de riesgo'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Ningún estudiante/)).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Bimestre')).toBeInTheDocument()
   })
 
   it('loads another period from the selector', async () => {
