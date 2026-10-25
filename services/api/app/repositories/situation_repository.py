@@ -13,7 +13,9 @@ class SituationRepository:
     def get(self, situation_id: int) -> StudentSituation | None:
         return self.db.get(StudentSituation, situation_id)
 
-    def list_for_student(self, student_id: int, *, include_resolved: bool) -> list[StudentSituation]:
+    def list_for_student(
+        self, student_id: int, *, include_resolved: bool
+    ) -> list[StudentSituation]:
         query = select(StudentSituation).where(StudentSituation.student_id == student_id)
         if not include_resolved:
             query = query.where(StudentSituation.resolved_on.is_(None))

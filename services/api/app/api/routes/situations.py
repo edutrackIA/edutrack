@@ -73,9 +73,7 @@ def current_checkin(
     return SituationService(db, today).current_checkin(user, classroom_id)
 
 
-@router.post(
-    "/classrooms/{classroom_id}/checkins/current/complete", response_model=CheckinResponse
-)
+@router.post("/classrooms/{classroom_id}/checkins/current/complete", response_model=CheckinResponse)
 def complete_checkin(
     classroom_id: int, user: CurrentUser, db: DbSession, today: SchoolToday
 ) -> CheckinResponse:

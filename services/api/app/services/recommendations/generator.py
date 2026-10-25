@@ -64,7 +64,9 @@ class RecommendationGenerator:
             values=values,
             situations={
                 situation.kind
-                for situation in self.situations.list_for_student(student.id, include_resolved=False)
+                for situation in self.situations.list_for_student(
+                    student.id, include_resolved=False
+                )
             },
             placeholders={
                 "name": student.first_name,

@@ -40,9 +40,7 @@ class SituationEvent(Base):
     situation_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("student_situations.id", ondelete="CASCADE"), index=True
     )
-    action: Mapped[SituationAction] = mapped_column(
-        Enum(SituationAction, name="situation_action")
-    )
+    action: Mapped[SituationAction] = mapped_column(Enum(SituationAction, name="situation_action"))
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
