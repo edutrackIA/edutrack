@@ -1,3 +1,4 @@
+import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from 'react'
 import type { RouteObject } from 'react-router-dom'
 import { RequireAuth, RequireRole } from '../features/auth/guards'
 import LoginPage from '../features/auth/pages/LoginPage'
@@ -6,12 +7,17 @@ import { AppLayout } from './layouts/AppLayout'
 import { HomeRedirect } from './pages/HomeRedirect'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PendingPage } from './pages/PendingPage'
+import { LoadingState } from '../shared/ui/Feedback'
+
+// Pages load on demand: each role only downloads the screens it uses.
+const DashboardPage = lazy(() => import('../features/dashboard/pages/DashboardPage'))
 
 interface Section {
   path: string
   roles: Role[]
   title: string
   description: string
+  page?: LazyExoticComponent<ComponentType>
 }
 
 // Each section is replaced by its real page in the following frontend features.
@@ -21,6 +27,7 @@ const SECTIONS: Section[] = [
     roles: ['DIRECTOR', 'ANALYST'],
     title: 'Resumen del colegio',
     description: 'Cómo está cada aula y qué explica el riesgo este bimestre.',
+    page: DashboardPage,
   },
   {
     path: 'aulas',
@@ -81,7 +88,13 @@ export const routes: RouteObject[] = [
         path: section.path,
         element: (
           <RequireRole roles={section.roles}>
-            <PendingPage title={section.title} description={section.description} />
+            {section.page ? (
+              <Suspense fallback={<LoadingState />}>
+                <section.page />
+              </Suspense>
+            ) : (
+              <PendingPage title={section.title} description={section.description} />
+            )}
           </RequireRole>
         ),
       })),
