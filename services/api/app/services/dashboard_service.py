@@ -13,6 +13,7 @@ from app.schemas.dashboard import ClassroomRiskSummary, DashboardSummary, Factor
 from app.services.risk.features import FEATURE_LABELS
 
 FACTORS_PER_STUDENT = 3
+RISK_LEVELS_WITH_FACTORS = {RiskLevel.MEDIUM, RiskLevel.HIGH}
 TOP_FACTORS = 5
 
 
@@ -83,9 +84,11 @@ class DashboardService:
             summary.evaluated += 1
             level_field = assessment.level.value.lower()
             setattr(summary, level_field, getattr(summary, level_field) + 1)
-            factors.update(
-                factor["feature"] for factor in assessment.top_factors[:FACTORS_PER_STUDENT]
-            )
+            # Factors only explain something when there is risk to explain.
+            if assessment.level in RISK_LEVELS_WITH_FACTORS:
+                factors.update(
+                    factor["feature"] for factor in assessment.top_factors[:FACTORS_PER_STUDENT]
+                )
 
         return DashboardSummary(
             period_id=data.period.id if data.period else None,
