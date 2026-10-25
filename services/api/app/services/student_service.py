@@ -14,6 +14,8 @@ from app.schemas.student import (
     StudentUpdate,
 )
 from app.services.access_policy import AccessPolicy
+from app.services.recommendation_service import RecommendationService
+from app.services.recommendations.catalog import ML_DISCLAIMER
 
 
 class StudentService:
@@ -119,13 +121,15 @@ class StudentService:
                 attendance_rate = round(attended / total, 4)
 
         average = round(sum(g.score for g in grades) / len(grades), 2) if grades else None
+        recommendation = RecommendationService(self.db).latest_for_family(student)
         return StudentSummary(
             student=StudentListItem.from_model(student),
             period_id=period.id if period else None,
             average_score=average,
             attendance_rate=attendance_rate,
             grades=[GradeResponse.from_model(grade) for grade in grades],
-            parent_suggestions=[],
+            parent_suggestions=recommendation.parent_items if recommendation else [],
+            disclaimer=ML_DISCLAIMER if recommendation else None,
         )
 
     def list_children(self, user: User) -> list[Student]:

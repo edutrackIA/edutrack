@@ -44,3 +44,15 @@ class CommitmentStatus(StrEnum):
     OPEN = "OPEN"
     FULFILLED = "FULFILLED"
     BREACHED = "BREACHED"
+
+
+class RiskLevel(StrEnum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+
+class RecommendationStatus(StrEnum):
+    PENDING_REVIEW = "PENDING_REVIEW"
+    APPROVED = "APPROVED"
+    DISCARDED = "DISCARDED"

@@ -56,6 +56,7 @@ npm run dev
 | Web (desarrollo) | http://localhost:5173 |
 | API y documentación | http://localhost:8000/api/docs |
 | Servicio ML | http://localhost:8001/docs |
+| Bandeja de correos (Mailpit) | http://localhost:8025 |
 
 ### Base de datos
 
