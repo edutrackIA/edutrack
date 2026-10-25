@@ -87,9 +87,12 @@ describe('StudentQuickView', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Ramírez Gutiérrez, Lucía' })
     expect(within(dialog).getByText('3° A, código 20260006')).toBeInTheDocument()
     expect(await within(dialog).findByText(/de probabilidad/)).toBeInTheDocument()
-    expect(within(dialog).getByRole('list', { name: 'Qué explica el riesgo' })).toHaveTextContent(
-      'Cursos desaprobados',
-    )
+    const factors = within(dialog).getByRole('list', { name: 'Qué explica el riesgo' })
+    const [attendance, failed] = within(factors).getAllByRole('listitem')
+    expect(attendance).toHaveTextContent('Asistencia78')
+    expect(attendance).toHaveTextContent('Pesa mucho')
+    expect(failed).toHaveTextContent('Cursos desaprobados2 cursos')
+    expect(failed).toHaveTextContent('Pesa bastante')
     expect(within(dialog).getByRole('list', { name: 'Notas del bimestre' })).toHaveTextContent(
       'Matemática',
     )
