@@ -44,6 +44,11 @@ def test_director_dashboard_summary(client: TestClient, assessed_school: School)
         },
     ]
     assert body["top_factors"] == [{"feature": "avg_score", "label": "Promedio", "frequency": 1}]
+    assert [(s["code"], s["level"], s["classroom"]) for s in body["students"]] == [
+        ("A001", "HIGH", "3° A"),
+        ("A002", "LOW", "3° A"),
+    ]
+    assert body["students"][0]["full_name"] == "Flores, Lucía"
 
 
 def test_dashboard_without_assessments(client: TestClient, school: School) -> None:
