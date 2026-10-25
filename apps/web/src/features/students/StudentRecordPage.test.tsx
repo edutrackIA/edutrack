@@ -145,6 +145,26 @@ describe('StudentRecordPage', () => {
     expect(screen.getByText('6 h por semana')).toBeInTheDocument()
   })
 
+  it('goes back to the page that opened the record', async () => {
+    mockApi({
+      ...BASE_HANDLERS,
+      'GET /students/6/commitments': FORBIDDEN,
+      'GET /students/6/surveys': FORBIDDEN,
+    })
+
+    renderPage(<StudentRecordPage />, {
+      user: TEACHER_USER,
+      route: '/estudiantes/:studentId',
+      path: '/estudiantes/6',
+      state: { from: '/recomendaciones?estado=PENDING_REVIEW' },
+    })
+
+    expect(await screen.findByRole('link', { name: 'Volver a recomendaciones' })).toHaveAttribute(
+      'href',
+      '/recomendaciones?estado=PENDING_REVIEW',
+    )
+  })
+
   it('explains when the student cannot be opened', async () => {
     mockApi({
       ...BASE_HANDLERS,

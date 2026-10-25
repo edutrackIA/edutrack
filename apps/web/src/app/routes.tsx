@@ -13,6 +13,10 @@ import { LoadingState } from '../shared/ui/Feedback'
 const DashboardPage = lazy(() => import('../features/dashboard/pages/DashboardPage'))
 const ClassroomsPage = lazy(() => import('../features/classrooms/pages/ClassroomsPage'))
 const StudentRecordPage = lazy(() => import('../features/students/pages/StudentRecordPage'))
+const AlertsPage = lazy(() => import('../features/alerts/pages/AlertsPage'))
+const RecommendationsPage = lazy(
+  () => import('../features/recommendations/pages/RecommendationsPage'),
+)
 
 interface Section {
   path: string
@@ -43,12 +47,14 @@ const SECTIONS: Section[] = [
     roles: ['TEACHER'],
     title: 'Alertas',
     description: 'Estudiantes que necesitan seguimiento.',
+    page: AlertsPage,
   },
   {
     path: 'recomendaciones',
     roles: ['TEACHER', 'DIRECTOR'],
     title: 'Recomendaciones',
     description: 'Revisa y aprueba las sugerencias antes de enviarlas a las familias.',
+    page: RecommendationsPage,
   },
   {
     path: 'evaluaciones',

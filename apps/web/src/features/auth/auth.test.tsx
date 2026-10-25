@@ -34,6 +34,7 @@ describe('authentication', () => {
       'POST /auth/login': () => json(TOKENS),
       'GET /auth/me': () => json(TEACHER),
       'GET /classrooms': () => json([]),
+      'GET /alerts': () => json({ total: 0, items: [] }),
     })
     const router = renderApp('/login')
     const user = userEvent.setup()
@@ -96,6 +97,7 @@ describe('authentication', () => {
       'POST /auth/refresh': () => json(TOKENS),
       'GET /auth/me': () => json(TEACHER),
       'GET /classrooms': () => json([]),
+      'GET /alerts': () => json({ total: 0, items: [] }),
       'POST /auth/logout': () => new Response(null, { status: 204 }),
     })
     const router = renderApp('/aulas')
@@ -114,6 +116,7 @@ describe('session safety', () => {
     const fetchMock = mockApi({
       'GET /auth/me': () => json(TEACHER),
       'GET /classrooms': () => json([]),
+      'GET /alerts': () => json({ total: 0, items: [] }),
     })
 
     renderApp('/aulas')
@@ -129,6 +132,7 @@ describe('session safety', () => {
       'POST /auth/login': () => json(TOKENS),
       'GET /auth/me': () => json(TEACHER),
       'GET /classrooms': () => json([]),
+      'GET /alerts': () => json({ total: 0, items: [] }),
     })
     const router = createMemoryRouter(routes, {
       initialEntries: [{ pathname: '/login', state: { from: '/\\evil.example' } }],

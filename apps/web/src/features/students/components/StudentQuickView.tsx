@@ -8,6 +8,7 @@ import { RiskBadge } from '../../../shared/ui/RiskBadge'
 import { usePeriods } from '../../periods/api'
 import { useStudent, useStudentRecommendations, useStudentSummary } from '../api'
 import type { Recommendation, RiskAssessment, StudentReference } from '../types'
+import { useRecordLinkState } from '../navigation'
 import { RiskFactors } from './RiskFactors'
 
 const PASSING_SCORE = 11
@@ -63,6 +64,7 @@ function QuickViewBody({ studentId, periodId }: { studentId: number; periodId: n
   const summary = useStudentSummary(studentId, periodId)
   const recommendations = useStudentRecommendations(studentId)
   const periods = usePeriods()
+  const linkState = useRecordLinkState()
 
   if (student.isPending || summary.isPending) return <LoadingState label="Cargando la ficha…" />
   if (student.isError) return <ErrorMessage>{messageFor(student.error)}</ErrorMessage>
@@ -142,6 +144,7 @@ function QuickViewBody({ studentId, periodId }: { studentId: number; periodId: n
       <div className="border-t border-rule pt-5">
         <Link
           to={`/estudiantes/${studentId}`}
+          state={linkState}
           className="inline-flex rounded-md bg-accent px-4 py-2.5 font-bold text-on-accent hover:bg-accent-strong"
         >
           Abrir ficha completa
