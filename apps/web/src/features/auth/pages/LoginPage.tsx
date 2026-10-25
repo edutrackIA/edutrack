@@ -9,7 +9,7 @@ import { useAuth } from '../auth-context'
 import { roleHome } from '../roles'
 
 export default function LoginPage() {
-  const { status, user, login } = useAuth()
+  const { status, user, sessionExpired, login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [email, setEmail] = useState('')
@@ -60,6 +60,14 @@ export default function LoginPage() {
           <p className="mt-2 text-ink-soft">Usa el correo que te asignó tu colegio.</p>
 
           <form className="mt-8 flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
+            {sessionExpired && !error && (
+              <p
+                role="status"
+                className="rounded-md border border-risk-medium/30 bg-risk-medium-bg px-4 py-3 text-risk-medium"
+              >
+                Tu sesión expiró. Vuelve a iniciar sesión para continuar donde estabas.
+              </p>
+            )}
             {error && <ErrorMessage>{error}</ErrorMessage>}
             <TextField
               label="Correo"

@@ -8,7 +8,7 @@ import type { User } from './types'
 
 type AuthState =
   | { status: 'loading' }
-  | { status: 'anonymous' }
+  | { status: 'anonymous'; expired?: boolean }
   | { status: 'authenticated'; user: User }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -33,14 +33,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (active) setState({ status: 'authenticated', user })
       } catch {
         clearTokens()
-        if (active) setState({ status: 'anonymous' })
+        // Keep the "expired" flag if the client already reported the expired session.
+        if (active) {
+          setState((current) =>
+            current.status === 'anonymous' ? current : { status: 'anonymous', expired: true },
+          )
+        }
       }
     }
 
     void restoreSession()
     const unsubscribe = onSessionExpired(() => {
       queryClient.clear()
-      setState({ status: 'anonymous' })
+      setState({ status: 'anonymous', expired: true })
     })
     return () => {
       active = false
@@ -73,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       status: state.status,
       user: state.status === 'authenticated' ? state.user : null,
+      sessionExpired: state.status === 'anonymous' && state.expired === true,
       login,
       logout,
     }),
