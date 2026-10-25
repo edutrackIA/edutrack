@@ -121,7 +121,7 @@ def _students_table(rows: list[ReportRow], style: ParagraphStyle) -> Table:
                 row.classroom,
                 LEVEL_LABELS[row.level],
                 f"{row.probability:.0%}",
-                Paragraph(escape(", ".join(row.factors)), style),
+                Paragraph(escape(", ".join(row.factors) or "—"), style),
             ]
         )
     table = Table(
