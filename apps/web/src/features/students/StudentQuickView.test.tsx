@@ -102,6 +102,10 @@ describe('StudentQuickView', () => {
     expect(fetchMock.mock.calls.map(([url]) => String(url))).toContain(
       '/api/v1/students/6/summary?period_id=3',
     )
+    expect(within(dialog).getByRole('link', { name: 'Abrir ficha completa' })).toHaveAttribute(
+      'href',
+      '/estudiantes/6',
+    )
   })
 
   it('closes with the close button', async () => {
