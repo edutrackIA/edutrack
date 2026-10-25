@@ -1,8 +1,8 @@
 from app.domain.academic_period import AcademicPeriod
 from app.domain.attendance import Attendance
 from app.domain.classroom import Classroom
-from app.domain.commitment import Commitment
 from app.domain.course_assignment import CourseAssignment
+from app.domain.commitment import Commitment
 from app.domain.enums import (
     AttendanceStatus,
     CommitmentStatus,
@@ -13,6 +13,8 @@ from app.domain.enums import (
     RiskLevel,
     Role,
     Sex,
+    SituationAction,
+    SituationKind,
 )
 from app.domain.family_survey import FamilySurvey
 from app.domain.grade import BehaviorRecord, Grade
@@ -21,6 +23,7 @@ from app.domain.institution import Institution
 from app.domain.recommendation import Alert, Recommendation
 from app.domain.refresh_token import RefreshToken
 from app.domain.risk import RiskAssessment, RiskThreshold
+from app.domain.situation import SituationEvent, StudentSituation, WeeklyCheckin
 from app.domain.student import Guardianship, Student
 from app.domain.subject import Subject
 from app.domain.user import User
@@ -51,7 +54,12 @@ __all__ = [
     "RiskThreshold",
     "Role",
     "Sex",
+    "SituationAction",
+    "SituationEvent",
+    "SituationKind",
+    "StudentSituation",
     "Student",
     "Subject",
     "User",
+    "WeeklyCheckin",
 ]
