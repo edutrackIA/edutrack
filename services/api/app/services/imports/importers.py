@@ -53,7 +53,7 @@ class RowImporter:
         code = _required(row, column)
         student = self.students.get_by_code(code)
         if student is None or student.institution_id != self.institution_id:
-            raise RowValidationError(column, f"Student {code} does not exist")
+            raise RowValidationError(column, f"El estudiante {code} no existe")
         return student
 
 
@@ -79,7 +79,7 @@ class StudentImporter(RowImporter):
         birth_date = _parse_date(row, "birth_date")
         sex = _required(row, "sex").upper()
         if sex not in Sex.__members__:
-            raise RowValidationError("sex", "Sex must be M or F")
+            raise RowValidationError("sex", "El sexo debe ser M o F")
         year = _parse_int(row, "year", 2000, 2100)
         grade = _parse_int(row, "grade", 1, 5)
         section = _required(row, "section").upper()
@@ -88,11 +88,11 @@ class StudentImporter(RowImporter):
             institution_id=self.institution_id, year=year, grade=grade, section=section
         )
         if classroom is None:
-            raise RowValidationError("section", f"Classroom {grade}° {section} ({year}) not found")
+            raise RowValidationError("section", f"No existe el aula {grade}° {section} ({year})")
 
         student = self.students.get_by_code(code)
         if student is not None and student.institution_id != self.institution_id:
-            raise RowValidationError("code", f"Code {code} is already in use")
+            raise RowValidationError("code", f"El código {code} ya está en uso")
 
         if student is None:
             self.students.add(
@@ -151,7 +151,7 @@ class GradeImporter(RowImporter):
             self._subjects[key] = self.academic.get_subject_by_name(name)
         subject = self._subjects[key]
         if subject is None:
-            raise RowValidationError("subject", f"Subject {name} does not exist")
+            raise RowValidationError("subject", f"El curso {name} no existe")
         return subject
 
 
@@ -166,7 +166,9 @@ class AttendanceImporter(RowImporter):
         day = _parse_date(row, "date")
         status = ATTENDANCE_ALIASES.get(_required(row, "status").upper())
         if status is None:
-            raise RowValidationError("status", "Status must be PRESENT, ABSENT, LATE or JUSTIFIED")
+            raise RowValidationError(
+                "status", "El estado debe ser PRESENT, ABSENT, LATE o JUSTIFIED"
+            )
 
         record = self.academic.get_attendance(student_id=student.id, day=day)
         if record is None:
@@ -178,7 +180,7 @@ class AttendanceImporter(RowImporter):
 def _required(row: dict[str, str], column: str) -> str:
     value = row.get(column, "").strip()
     if not value:
-        raise RowValidationError(column, "Value is required")
+        raise RowValidationError(column, "Falta el valor")
     return value
 
 
@@ -187,9 +189,9 @@ def _parse_int(row: dict[str, str], column: str, minimum: int, maximum: int) -> 
     try:
         value = int(raw)
     except ValueError as exc:
-        raise RowValidationError(column, f"{raw} is not a whole number") from exc
+        raise RowValidationError(column, f"{raw} no es un número entero") from exc
     if not minimum <= value <= maximum:
-        raise RowValidationError(column, f"Must be between {minimum} and {maximum}")
+        raise RowValidationError(column, f"Debe estar entre {minimum} y {maximum}")
     return value
 
 
@@ -198,9 +200,9 @@ def _parse_score(row: dict[str, str], column: str) -> float:
     try:
         value = float(raw.replace(",", "."))
     except ValueError as exc:
-        raise RowValidationError(column, f"{raw} is not a number") from exc
+        raise RowValidationError(column, f"{raw} no es un número") from exc
     if not 0 <= value <= 20:
-        raise RowValidationError(column, "Score must be between 0 and 20")
+        raise RowValidationError(column, "La nota debe estar entre 0 y 20")
     return value
 
 
@@ -211,4 +213,4 @@ def _parse_date(row: dict[str, str], column: str) -> date:
             return datetime.strptime(raw, pattern).date()
         except ValueError:
             continue
-    raise RowValidationError(column, f"{raw} is not a valid date (YYYY-MM-DD or DD/MM/YYYY)")
+    raise RowValidationError(column, f"{raw} no es una fecha válida (AAAA-MM-DD o DD/MM/AAAA)")

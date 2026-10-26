@@ -28,7 +28,7 @@ def parse_file(filename: str, content: bytes) -> tuple[list[str], list[Row]]:
 
     table = _read_csv(content) if extension == ".csv" else _read_xlsx(content)
     if not table:
-        raise FileFormatError("The file is empty")
+        raise FileFormatError("El archivo está vacío")
 
     headers = [_normalize_header(value) for value in table[0]]
     rows: list[Row] = []
@@ -66,12 +66,12 @@ def _read_xlsx(content: bytes) -> list[list[str]]:
     try:
         workbook = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
     except (InvalidFileException, zipfile.BadZipFile, KeyError) as exc:
-        raise FileFormatError("The Excel file could not be read") from exc
+        raise FileFormatError("No se pudo leer el archivo de Excel") from exc
 
     try:
         sheet = workbook.active
         if sheet is None:
-            raise FileFormatError("The Excel file has no sheets")
+            raise FileFormatError("El archivo de Excel no tiene hojas")
         return [[_cell_to_text(cell) for cell in row] for row in sheet.iter_rows(values_only=True)]
     finally:
         workbook.close()

@@ -20,12 +20,18 @@ def create_import(
     kind: Annotated[ImportKind, Form()],
     file: Annotated[UploadFile, File()],
     period_id: Annotated[int | None, Form()] = None,
+    dry_run: Annotated[bool, Form()] = False,
 ) -> ImportJobResponse:
     content = file.file.read(import_service.MAX_UPLOAD_BYTES + 1)
     job = ImportService(db).run(
-        user, kind=kind, filename=file.filename or "", content=content, period_id=period_id
+        user,
+        kind=kind,
+        filename=file.filename or "",
+        content=content,
+        period_id=period_id,
+        dry_run=dry_run,
     )
-    return ImportJobResponse.model_validate(job)
+    return ImportJobResponse.model_validate(job).model_copy(update={"preview": dry_run})
 
 
 @router.get("/templates/{kind}")
