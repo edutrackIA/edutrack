@@ -14,6 +14,7 @@ import {
 } from '../../../shared/ui/Table'
 import { useAuth } from '../../auth/auth-context'
 import { HeldMessages } from '../../family-messages/components/HeldMessages'
+import { FamilyReports } from '../../parent-portal/components/FamilyReports'
 import { classroomLabel, useClassrooms, useClassroomStudents, type Classroom } from '../../classrooms/api'
 import { useCheckin, useClassroomSituations, useCompleteCheckin, type Checkin } from '../api'
 import { SituationChip } from '../components/SituationChip'
@@ -192,6 +193,7 @@ export default function WeeklyFollowUpPage() {
       )}
       {selected && (
         <div className="flex flex-col gap-6 lg:min-h-0 lg:flex-1">
+          <FamilyReports />
           <HeldMessages />
           <ClassroomFollowUp key={selected.id} classroom={selected} />
         </div>

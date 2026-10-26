@@ -44,6 +44,7 @@ describe('WeeklyFollowUpPage', () => {
       'GET /classrooms/1/students': () => json(STUDENTS),
       'GET /classrooms/1/situations': () => json([GRIEF]),
       'GET /family-messages/held': () => json([]),
+      'GET /family-checkins/pending': () => json([]),
       'GET /situations/catalog': () => json(CATALOG),
       'POST /students/6/situations': (init) => {
         bodies.push(JSON.parse(String(init?.body)))
@@ -98,6 +99,7 @@ describe('WeeklyFollowUpPage', () => {
       'GET /classrooms/1/students': () => json(STUDENTS),
       'GET /classrooms/1/situations': () => json([]),
       'GET /family-messages/held': () => json([]),
+      'GET /family-checkins/pending': () => json([]),
     })
 
     renderPage(<WeeklyFollowUpPage />, { user: TEACHER_USER })
@@ -130,6 +132,7 @@ describe('WeeklyFollowUpPage', () => {
       'GET /classrooms/1/students': () => json(STUDENTS),
       'GET /classrooms/1/situations': () => json([]),
       'GET /family-messages/held': () => json(held),
+      'GET /family-checkins/pending': () => json([]),
       'POST /family-messages/7/release': () => {
         actions.push('release')
         held = []
@@ -147,6 +150,51 @@ describe('WeeklyFollowUpPage', () => {
     await vi.waitFor(() => expect(actions).toEqual(['release']))
     await vi.waitFor(() =>
       expect(screen.queryByRole('region', { name: /Mensajes automáticos retenidos/ })).not.toBeInTheDocument(),
+    )
+  })
+
+  it('shows family reports first and lets the tutor mark them as reviewed', async () => {
+    let reports = [
+      {
+        id: 5,
+        student: STUDENTS[0],
+        month: '2026-10-01',
+        mood: 'WORRIED',
+        mood_label: 'Nos preocupa',
+        home_changes: ['HEALTH'],
+        home_change_labels: ['Salud de algún familiar o del estudiante'],
+        peer_concern: true,
+        comment: 'Llega triste del colegio.',
+        submitted_at: '2026-10-28T10:00:00',
+        reviewed_at: null,
+      },
+    ]
+    mockApi({
+      'GET /classrooms': () => json(CLASSROOMS),
+      'GET /classrooms/1/checkins/current': () => json(PENDING),
+      'GET /classrooms/1/students': () => json(STUDENTS),
+      'GET /classrooms/1/situations': () => json([]),
+      'GET /family-messages/held': () => json([]),
+      'GET /family-checkins/pending': () => json(reports),
+      'POST /family-checkins/5/review': () => {
+        reports = []
+        return json({ id: 5 })
+      },
+    })
+    renderPage(<WeeklyFollowUpPage />, { user: TEACHER_USER })
+
+    const section = await screen.findByRole('region', { name: 'Reportes de las familias (1)' })
+    expect(
+      within(section).getByText('La familia indica que le preocupa cómo lo tratan sus compañeros.'),
+    ).toBeInTheDocument()
+    expect(within(section).getByText(/Llega triste del colegio/)).toBeInTheDocument()
+
+    await userEvent
+      .setup()
+      .click(within(section).getByRole('button', { name: /Marcar como revisado/ }))
+
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('region', { name: /Reportes de las familias/ })).not.toBeInTheDocument(),
     )
   })
 })

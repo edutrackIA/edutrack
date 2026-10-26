@@ -71,6 +71,7 @@ describe('authentication', () => {
     mockApi({
       'POST /auth/refresh': () => json({ ...TOKENS, refresh_token: 'refresh-2' }),
       'GET /auth/me': () => json(PARENT),
+      'GET /me/children': () => json([]),
     })
 
     const router = renderApp('/')
@@ -97,6 +98,7 @@ describe('authentication', () => {
     mockApi({
       'POST /auth/refresh': () => json(TOKENS),
       'GET /auth/me': () => json(PARENT),
+      'GET /me/children': () => json([]),
     })
 
     renderApp('/resumen')
