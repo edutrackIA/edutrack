@@ -42,6 +42,9 @@ export interface StudentSummary {
   average_score: number | null
   attendance_rate: number | null
   grades: Grade[]
+  /** Approved recommendations for the family; empty until the tutor approves them. */
+  parent_suggestions: string[]
+  disclaimer: string | null
 }
 
 export type RecommendationStatus = 'PENDING_REVIEW' | 'APPROVED' | 'DISCARDED'

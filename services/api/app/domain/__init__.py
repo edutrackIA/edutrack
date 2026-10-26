@@ -8,6 +8,8 @@ from app.domain.enums import (
     CommitmentStatus,
     FamilyMessageKind,
     FamilyMessageStatus,
+    FamilyMood,
+    HomeChange,
     ImportKind,
     ImportStatus,
     ParentEducation,
@@ -18,6 +20,7 @@ from app.domain.enums import (
     SituationAction,
     SituationKind,
 )
+from app.domain.family_checkin import FamilyCheckin
 from app.domain.family_survey import FamilySurvey
 from app.domain.grade import BehaviorRecord, Grade
 from app.domain.import_job import ImportJob
@@ -41,12 +44,15 @@ __all__ = [
     "Commitment",
     "CommitmentStatus",
     "CourseAssignment",
+    "FamilyCheckin",
     "FamilyMessage",
     "FamilyMessageKind",
     "FamilyMessageStatus",
+    "FamilyMood",
     "FamilySurvey",
     "Grade",
     "Guardianship",
+    "HomeChange",
     "ImportJob",
     "ImportKind",
     "ImportStatus",

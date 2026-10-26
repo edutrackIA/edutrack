@@ -17,6 +17,7 @@ const AlertsPage = lazy(() => import('../features/alerts/pages/AlertsPage'))
 const WeeklyFollowUpPage = lazy(
   () => import('../features/situations/pages/WeeklyFollowUpPage'),
 )
+const ParentPortalPage = lazy(() => import('../features/parent-portal/pages/ParentPortalPage'))
 const RecommendationsPage = lazy(
   () => import('../features/recommendations/pages/RecommendationsPage'),
 )
@@ -89,6 +90,7 @@ const SECTIONS: Section[] = [
     roles: ['PARENT'],
     title: 'Mi hijo',
     description: 'Avance del bimestre y sugerencias para acompañarlo en casa.',
+    page: ParentPortalPage,
   },
 ]
 
