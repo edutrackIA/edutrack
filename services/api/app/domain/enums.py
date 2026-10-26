@@ -95,3 +95,18 @@ class FamilyMessageStatus(StrEnum):
     HELD = "HELD"
     FAILED = "FAILED"
     DISCARDED = "DISCARDED"
+
+
+class FamilyMood(StrEnum):
+    GOOD = "GOOD"
+    OK = "OK"
+    WORRIED = "WORRIED"
+
+
+class HomeChange(StrEnum):
+    MOVING = "MOVING"
+    HEALTH = "HEALTH"
+    PARENTS_WORK = "PARENTS_WORK"
+    CARING_FAMILY = "CARING_FAMILY"
+    ECONOMIC = "ECONOMIC"
+    OTHER = "OTHER"
