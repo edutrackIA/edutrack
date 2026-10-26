@@ -18,6 +18,9 @@ const WeeklyFollowUpPage = lazy(
   () => import('../features/situations/pages/WeeklyFollowUpPage'),
 )
 const ParentPortalPage = lazy(() => import('../features/parent-portal/pages/ParentPortalPage'))
+const ImportsPage = lazy(() => import('../features/analyst/pages/ImportsPage'))
+const AssessmentsPage = lazy(() => import('../features/analyst/pages/AssessmentsPage'))
+const ThresholdsPage = lazy(() => import('../features/analyst/pages/ThresholdsPage'))
 const RecommendationsPage = lazy(
   () => import('../features/recommendations/pages/RecommendationsPage'),
 )
@@ -72,18 +75,21 @@ const SECTIONS: Section[] = [
     roles: ['ANALYST'],
     title: 'Evaluaciones de riesgo',
     description: 'Ejecuta el análisis de un bimestre o de un aula.',
+    page: AssessmentsPage,
   },
   {
     path: 'carga-de-datos',
     roles: ['ANALYST'],
     title: 'Carga de datos',
     description: 'Importa estudiantes, notas y asistencia desde Excel o CSV.',
+    page: ImportsPage,
   },
   {
     path: 'umbrales',
     roles: ['ANALYST'],
     title: 'Umbrales de riesgo',
     description: 'Define desde qué probabilidad un caso es moderado o alto.',
+    page: ThresholdsPage,
   },
   {
     path: 'mi-hijo',
