@@ -5,6 +5,7 @@ from app.api.routes import (
     classrooms,
     commitments,
     dashboard,
+    family_checkins,
     family_messages,
     health,
     imports,
@@ -30,3 +31,4 @@ api_router.include_router(dashboard.router)
 api_router.include_router(periods.router)
 api_router.include_router(situations.router)
 api_router.include_router(family_messages.router)
+api_router.include_router(family_checkins.router)
