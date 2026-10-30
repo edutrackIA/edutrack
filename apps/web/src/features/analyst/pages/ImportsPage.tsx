@@ -33,6 +33,12 @@ const KINDS: { value: ImportKind; label: string; columns: string; note?: string 
     columns: 'student_code, date, status',
     note: 'Estados: PRESENT, ABSENT, LATE o JUSTIFIED.',
   },
+  {
+    value: 'GUARDIANS',
+    label: 'Apoderados',
+    columns: 'student_code, full_name, email, kinship',
+    note: 'Al confirmar, los correos nuevos reciben una invitación para crear su contraseña.',
+  },
 ]
 
 function rows(count: number, singular: string, plural: string): string {
@@ -176,7 +182,7 @@ export default function ImportsPage() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-5 lg:min-h-0 lg:overflow-y-auto">
           <fieldset>
             <legend className="font-bold text-ink">Qué vas a importar</legend>
-            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            <div className="mt-2 grid grid-cols-2 gap-2 xl:grid-cols-4">
               {KINDS.map((option) => (
                 <label
                   key={option.value}

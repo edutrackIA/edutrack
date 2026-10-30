@@ -3,7 +3,7 @@ import { apiFetch, apiRequest } from '../../shared/api/client'
 import { filenameFrom, saveBlob } from '../../shared/lib/download'
 import type { RiskLevel } from '../../shared/lib/risk'
 
-export type ImportKind = 'STUDENTS' | 'GRADES' | 'ATTENDANCE'
+export type ImportKind = 'STUDENTS' | 'GRADES' | 'ATTENDANCE' | 'GUARDIANS'
 
 export interface ImportJob {
   /** Null for a preview, which is not stored. */
