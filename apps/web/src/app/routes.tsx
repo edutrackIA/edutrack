@@ -27,6 +27,9 @@ const ThresholdsPage = lazy(() => import('../features/analyst/pages/ThresholdsPa
 const SchoolSetupPage = lazy(() => import('../features/school-setup/pages/SchoolSetupPage'))
 const ClassRegisterPage = lazy(() => import('../features/class-register/pages/ClassRegisterPage'))
 const AccountPage = lazy(() => import('../features/auth/pages/AccountPage'))
+const ModelPerformancePage = lazy(
+  () => import('../features/model-monitoring/pages/ModelPerformancePage'),
+)
 const RecommendationsPage = lazy(
   () => import('../features/recommendations/pages/RecommendationsPage'),
 )
@@ -68,6 +71,13 @@ const SECTIONS: Section[] = [
     title: 'Recomendaciones',
     description: 'Revisa y aprueba las sugerencias antes de enviarlas a las familias.',
     page: RecommendationsPage,
+  },
+  {
+    path: 'modelo',
+    roles: ['DIRECTOR', 'ANALYST'],
+    title: 'Rendimiento del modelo',
+    description: 'Alertas frente a retiros reales.',
+    page: ModelPerformancePage,
   },
   {
     path: 'mi-cuenta',

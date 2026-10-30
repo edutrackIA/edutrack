@@ -10,6 +10,7 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     { to: '/resumen', label: 'Resumen' },
     { to: '/aulas', label: 'Aulas' },
     { to: '/recomendaciones', label: 'Recomendaciones' },
+    { to: '/modelo', label: 'Modelo' },
     { to: '/configuracion', label: 'Configuración' },
   ],
   TEACHER: [
@@ -23,6 +24,7 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     { to: '/evaluaciones', label: 'Evaluaciones' },
     { to: '/carga-de-datos', label: 'Carga de datos' },
     { to: '/umbrales', label: 'Umbrales de riesgo' },
+    { to: '/modelo', label: 'Modelo' },
     { to: '/aulas', label: 'Aulas' },
   ],
   PARENT: [{ to: '/mi-hijo', label: 'Mi hijo' }],
