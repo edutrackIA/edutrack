@@ -22,6 +22,7 @@ const ParentPortalPage = lazy(() => import('../features/parent-portal/pages/Pare
 const ImportsPage = lazy(() => import('../features/analyst/pages/ImportsPage'))
 const AssessmentsPage = lazy(() => import('../features/analyst/pages/AssessmentsPage'))
 const ThresholdsPage = lazy(() => import('../features/analyst/pages/ThresholdsPage'))
+const SchoolSetupPage = lazy(() => import('../features/school-setup/pages/SchoolSetupPage'))
 const RecommendationsPage = lazy(
   () => import('../features/recommendations/pages/RecommendationsPage'),
 )
@@ -63,6 +64,13 @@ const SECTIONS: Section[] = [
     title: 'Recomendaciones',
     description: 'Revisa y aprueba las sugerencias antes de enviarlas a las familias.',
     page: RecommendationsPage,
+  },
+  {
+    path: 'configuracion',
+    roles: ['DIRECTOR'],
+    title: 'Configuración del colegio',
+    description: 'Bimestres, cursos, personal, aulas y asignaciones.',
+    page: SchoolSetupPage,
   },
   {
     path: 'seguimiento',
