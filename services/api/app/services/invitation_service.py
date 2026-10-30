@@ -7,7 +7,7 @@ from app.core.config import get_settings
 from app.core.errors import ConflictError, NotFoundError, UnprocessableError
 from app.core.security import hash_password, hash_url_token, new_url_token, password_problems
 from app.core.time import utcnow
-from app.domain import Guardianship, Institution, Invitation, Role, Student, User
+from app.domain import Guardianship, Institution, Invitation, Role, Student, TokenPurpose, User
 from app.services.notifications.delivery import deliver
 from app.services.notifications.email_sender import EmailSender
 from app.services.notifications.templates import InvitationEmail
@@ -31,7 +31,7 @@ class InvitationService:
         if user.has_access:
             raise ConflictError("The user already has access", code="ALREADY_HAS_ACCESS")
         now = utcnow()
-        for previous in self._open_invitations(user.id):
+        for previous in self.open_links(user.id):
             previous.revoked_at = now
 
         raw, token_hash = new_url_token()
@@ -39,15 +39,21 @@ class InvitationService:
             Invitation(
                 user_id=user.id,
                 token_hash=token_hash,
+                purpose=TokenPurpose.INVITATION,
                 expires_at=now + timedelta(days=INVITATION_DAYS),
             )
         )
         self.db.commit()
         return self._send(user, raw)
 
-    def get_usable(self, raw_token: str) -> Invitation:
+    def get_usable(
+        self, raw_token: str, purpose: TokenPurpose = TokenPurpose.INVITATION
+    ) -> Invitation:
+        """A link of the right purpose that is not expired, revoked or already used."""
         invitation = self.db.scalar(
-            select(Invitation).where(Invitation.token_hash == hash_url_token(raw_token))
+            select(Invitation).where(
+                Invitation.token_hash == hash_url_token(raw_token), Invitation.purpose == purpose
+            )
         )
         if invitation is None:
             raise NotFoundError("Invitation not found", code="INVITATION_NOT_FOUND")
@@ -68,11 +74,14 @@ class InvitationService:
 
     # --- Internos -------------------------------------------------------------------
 
-    def _open_invitations(self, user_id: int) -> list[Invitation]:
+    def open_links(
+        self, user_id: int, purpose: TokenPurpose = TokenPurpose.INVITATION
+    ) -> list[Invitation]:
         return list(
             self.db.scalars(
                 select(Invitation).where(
                     Invitation.user_id == user_id,
+                    Invitation.purpose == purpose,
                     Invitation.accepted_at.is_(None),
                     Invitation.revoked_at.is_(None),
                 )
