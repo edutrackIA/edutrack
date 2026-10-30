@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     auth,
+    class_register,
     classrooms,
     commitments,
     dashboard,
@@ -38,3 +39,4 @@ api_router.include_router(family_checkins.router)
 api_router.include_router(guardians.router)
 api_router.include_router(invitations.router)
 api_router.include_router(school_setup.router)
+api_router.include_router(class_register.router)
