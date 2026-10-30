@@ -56,4 +56,14 @@ login_by_address = RateLimiter(limit=30, window_seconds=15 * 60)
 # Per address: failed invitation lookups or acceptances.
 invitations_by_address = RateLimiter(limit=20, window_seconds=15 * 60)
 
-ALL_LIMITERS = (login_by_account, login_by_address, invitations_by_address)
+# Forgot-password requests (every request counts, not only failures): avoids email bombing.
+resets_by_email = RateLimiter(limit=3, window_seconds=60 * 60)
+resets_by_address = RateLimiter(limit=10, window_seconds=60 * 60)
+
+ALL_LIMITERS = (
+    login_by_account,
+    login_by_address,
+    invitations_by_address,
+    resets_by_email,
+    resets_by_address,
+)
