@@ -2,6 +2,7 @@ import { ApiError } from './client'
 
 const MESSAGES: Record<string, string> = {
   INVALID_CREDENTIALS: 'El correo o la contraseña no son correctos.',
+  WRONG_PASSWORD: 'La contraseña actual no es correcta.',
   TOO_MANY_ATTEMPTS:
     'Demasiados intentos fallidos. Por seguridad, espera unos minutos antes de volver a intentarlo.',
   UNAUTHORIZED: 'Tu sesión terminó. Vuelve a iniciar sesión.',

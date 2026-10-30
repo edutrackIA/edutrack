@@ -3,22 +3,9 @@ import { Link, useParams } from 'react-router-dom'
 import { messageFor } from '../../../shared/api/errors'
 import { Button } from '../../../shared/ui/Button'
 import { ErrorMessage, LoadingState } from '../../../shared/ui/Feedback'
-import { TextField } from '../../../shared/ui/TextField'
 import { ThemeToggle } from '../../../shared/ui/ThemeToggle'
-import { passwordChecks, useAcceptInvitation, useInvitation } from '../invitations'
-
-function Checklist({ checks }: { checks: { label: string; ok: boolean }[] }) {
-  return (
-    <ul aria-label="Requisitos de la contraseña" className="flex flex-col gap-1 text-sm">
-      {checks.map((check) => (
-        <li key={check.label} className={check.ok ? 'text-risk-low' : 'text-ink-soft'}>
-          <span aria-hidden="true">{check.ok ? '✓' : '○'}</span> {check.label}
-          <span className="sr-only">{check.ok ? ': cumplido' : ': pendiente'}</span>
-        </li>
-      ))}
-    </ul>
-  )
-}
+import { isValidNewPassword, NewPasswordFields } from '../components/NewPasswordFields'
+import { useAcceptInvitation, useInvitation } from '../invitations'
 
 /** Public page where an invited guardian creates their password. */
 export default function AcceptInvitationPage() {
@@ -27,8 +14,7 @@ export default function AcceptInvitationPage() {
   const accept = useAcceptInvitation(token)
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
-  const checks = passwordChecks(password, confirmation)
-  const valid = checks.every((check) => check.ok)
+  const valid = isValidNewPassword(password, confirmation)
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -79,21 +65,12 @@ export default function AcceptInvitationPage() {
               Crea tu contraseña para entrar a EduTrack con {invitation.data.email}.
             </p>
             <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5" noValidate>
-              <TextField
-                label="Contraseña"
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
+              <NewPasswordFields
+                password={password}
+                confirmation={confirmation}
+                onPassword={setPassword}
+                onConfirmation={setConfirmation}
               />
-              <TextField
-                label="Repite la contraseña"
-                type="password"
-                autoComplete="new-password"
-                value={confirmation}
-                onChange={(event) => setConfirmation(event.target.value)}
-              />
-              <Checklist checks={checks} />
               {accept.isError && <ErrorMessage>{messageFor(accept.error)}</ErrorMessage>}
               <Button type="submit" pending={accept.isPending} disabled={!valid}>
                 Crear contraseña
