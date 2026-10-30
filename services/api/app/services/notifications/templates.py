@@ -160,3 +160,45 @@ class StaffNoticeEmail:
             f'<p><a href="{escape(self.portal_url)}">Ingresar a EduTrack</a></p>'
             "</body></html>"
         )
+
+
+@dataclass
+class InvitationEmail:
+    """Invitation for a guardian to create their EduTrack password."""
+
+    guardian_name: str
+    student_names: list[str]
+    institution_name: str
+    link: str
+    valid_days: int
+
+    @property
+    def subject(self) -> str:
+        return f"{self.institution_name}: crea tu acceso a EduTrack"
+
+    def _students(self) -> str:
+        return " y ".join(self.student_names) if self.student_names else "su hijo o hija"
+
+    def text(self) -> str:
+        return (
+            f"Hola, {self.guardian_name}:\n\n"
+            f"{self.institution_name} lo registró como apoderado de {self._students()} en EduTrack, "
+            "donde podrá ver su avance y las sugerencias de su tutor.\n\n"
+            f"Cree su contraseña en este enlace (vence en {self.valid_days} días):\n{self.link}\n\n"
+            "Si no reconoce este correo, puede ignorarlo.\n"
+        )
+
+    def html(self) -> str:
+        return (
+            '<!doctype html><html lang="es"><body style="font-family:Arial,sans-serif;'
+            'color:#1f2937;padding:24px">'
+            f"<p>Hola, {escape(self.guardian_name)}:</p>"
+            f"<p>{escape(self.institution_name)} lo registró como apoderado de "
+            f"<strong>{escape(self._students())}</strong> en EduTrack, donde podrá ver su avance "
+            "y las sugerencias de su tutor.</p>"
+            f'<p><a href="{escape(self.link)}" style="background:#1168bd;color:#ffffff;'
+            'padding:12px 22px;border-radius:8px;text-decoration:none">Crear mi contraseña</a></p>'
+            f'<p style="color:#6b7280;font-size:13px">El enlace vence en {self.valid_days} días. '
+            "Si no reconoce este correo, puede ignorarlo.</p>"
+            "</body></html>"
+        )
