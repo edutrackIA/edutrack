@@ -22,9 +22,10 @@ import {
   useStudentSurveys,
 } from '../api'
 import { formatFactorValue } from '../factor-format'
+import { CommitmentsCard } from '../components/CommitmentsCard'
 import { RiskFactors } from '../components/RiskFactors'
 import { backLink } from '../navigation'
-import type { Commitment, FamilySurvey, Grade, Recommendation, RiskAssessment } from '../types'
+import type { FamilySurvey, Grade, Recommendation, RiskAssessment } from '../types'
 
 const PASSING_SCORE = 11
 
@@ -194,41 +195,6 @@ function RecommendationCard({ recommendation }: { recommendation?: Recommendatio
   )
 }
 
-const COMMITMENT_STATUS: Record<Commitment['status'], string> = {
-  OPEN: 'En seguimiento',
-  FULFILLED: 'Cumplido',
-  BREACHED: 'No cumplido',
-}
-
-function CommitmentsCard({ commitments }: { commitments: Commitment[] }) {
-  return (
-    <Card title="Actas con la familia">
-      {commitments.length === 0 ? (
-        <p className="text-ink-soft">No hay actas registradas.</p>
-      ) : (
-        <ul className="divide-y divide-rule">
-          {commitments.map((commitment) => (
-            <li key={commitment.id} className="py-3 first:pt-0 last:pb-0">
-              <p className="flex flex-wrap justify-between gap-2">
-                <span className="font-bold">{formatDate(commitment.meeting_date)}</span>
-                <span className="text-sm text-ink-soft">
-                  {COMMITMENT_STATUS[commitment.status]}
-                </span>
-              </p>
-              <p className="mt-1">{commitment.agreements}</p>
-              {commitment.follow_up_date && (
-                <p className="mt-1 text-sm text-ink-soft">
-                  Seguimiento: {formatDate(commitment.follow_up_date)}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
-  )
-}
-
 function SurveyCard({ survey, periods }: { survey: FamilySurvey; periods?: Period[] }) {
   const rows: [string, string][] = [
     ['Horas de estudio', formatFactorValue('study_hours_week', survey.study_hours_week)],
@@ -380,7 +346,15 @@ export default function StudentRecordPage() {
               <ErrorMessage>{messageFor(commitments.error)}</ErrorMessage>
             )
           ) : (
-            commitments.data && <CommitmentsCard commitments={commitments.data} />
+            commitments.data && (
+              <CommitmentsCard
+                studentId={studentId}
+                studentName={`${detail.last_name}, ${detail.first_name}`}
+                commitments={commitments.data}
+                guardians={detail.guardians}
+                canManage={user?.role === 'DIRECTOR' || user?.role === 'TEACHER'}
+              />
+            )
           )}
           {managesGuardians && (
             <GuardiansCard
