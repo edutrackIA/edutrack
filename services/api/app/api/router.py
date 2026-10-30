@@ -7,8 +7,10 @@ from app.api.routes import (
     dashboard,
     family_checkins,
     family_messages,
+    guardians,
     health,
     imports,
+    invitations,
     periods,
     recommendations,
     risk,
@@ -32,3 +34,5 @@ api_router.include_router(periods.router)
 api_router.include_router(situations.router)
 api_router.include_router(family_messages.router)
 api_router.include_router(family_checkins.router)
+api_router.include_router(guardians.router)
+api_router.include_router(invitations.router)
