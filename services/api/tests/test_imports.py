@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.domain import Attendance, AttendanceStatus, Grade, ImportJob, Student
 from app.services import import_service
-from tests.conftest import School, auth
+from tests.conftest import Outbox, School, auth
 
 URL = "/api/v1/imports"
 
@@ -295,3 +295,31 @@ def test_preview_validates_without_saving(
     assert (body["rows_ok"], body["rows_failed"]) == (1, 1)
     assert db_session.scalars(select(Grade)).all() == []
     assert db_session.scalars(select(ImportJob)).all() == []
+
+
+GUARDIANS_CSV = (
+    "student_code,full_name,email,kinship\n"
+    "A002,Rosa Huamán,rosa@correo.com,Madre\n"
+    "A002,Profe Infiltrado,teacher@school.dev,Padre\n"
+).encode()
+
+
+def test_guardian_import_links_and_invites_after_saving(
+    client: TestClient, school: School, outbox: Outbox
+) -> None:
+    preview = client.post(
+        URL,
+        data={"kind": "GUARDIANS", "dry_run": "true"},
+        files={"file": ("apoderados.csv", GUARDIANS_CSV, "text/csv")},
+        headers=auth(school.analyst),
+    ).json()
+    assert (preview["rows_ok"], preview["rows_failed"]) == (1, 1)
+    assert outbox.messages == []
+
+    body = upload(client, school, "GUARDIANS", GUARDIANS_CSV, "apoderados.csv").json()
+
+    assert (body["rows_ok"], body["rows_failed"]) == (1, 1)
+    assert (
+        body["errors"][0]["message"] == "El correo teacher@school.dev ya pertenece a otro usuario"
+    )
+    assert [message["To"] for message in outbox.messages] == ["rosa@correo.com"]
