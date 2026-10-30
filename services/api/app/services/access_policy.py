@@ -91,6 +91,12 @@ class AccessPolicy:
             return
         raise self._forbidden()
 
+    def ensure_can_manage_guardians(self, user: User, student: Student) -> None:
+        """Registering guardians is administrative work: direction and data analysis."""
+        self._ensure_same_institution(user, student.institution_id, "Student")
+        if user.role not in (Role.DIRECTOR, Role.ANALYST):
+            raise self._forbidden()
+
     def ensure_is_guardian(self, user: User, student: Student) -> None:
         self._ensure_same_institution(user, student.institution_id, "Student")
         if user.role == Role.PARENT and self.students.is_guardian(
