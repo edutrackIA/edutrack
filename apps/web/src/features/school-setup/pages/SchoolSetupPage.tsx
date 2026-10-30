@@ -5,6 +5,7 @@ import { ClassroomsSection } from '../components/ClassroomsSection'
 import { PeriodsSection } from '../components/PeriodsSection'
 import { StaffSection } from '../components/StaffSection'
 import { SubjectsSection } from '../components/SubjectsSection'
+import { YearClosingSection } from '../components/YearClosingSection'
 
 // In the order a new school fills them in.
 const SECTIONS = [
@@ -13,6 +14,7 @@ const SECTIONS = [
   { id: 'personal', label: 'Personal', Component: StaffSection },
   { id: 'aulas', label: 'Aulas', Component: ClassroomsSection },
   { id: 'asignaciones', label: 'Asignaciones', Component: AssignmentsSection },
+  { id: 'cierre', label: 'Cierre de año', Component: YearClosingSection },
 ] as const
 
 export default function SchoolSetupPage() {
@@ -24,7 +26,7 @@ export default function SchoolSetupPage() {
     <>
       <PageHeader
         title="Configuración del colegio"
-        description="Bimestres, cursos, personal, aulas y asignaciones."
+        description="Bimestres, cursos, personal, aulas, asignaciones y cierre de año."
       />
       <nav aria-label="Secciones de la configuración" className="mb-8 flex flex-wrap gap-1">
         {SECTIONS.map((item, index) => (
