@@ -13,10 +13,19 @@ import {
   TableHeaderCell,
   TableRow,
 } from '../../../shared/ui/Table'
-import { usePeriods } from '../../periods/api'
+import { latestWithGrades, periodOptionLabel, usePeriods } from '../../periods/api'
 import { useRunAssessment, type AssessmentRun } from '../api'
 
 const LEVELS: RiskLevel[] = ['HIGH', 'MEDIUM', 'LOW']
+
+/** Skipped students grouped by the missing data, most common first. */
+function reasons(run: AssessmentRun): [string, number][] {
+  const counts = new Map<string, number>()
+  for (const student of run.skipped_students) {
+    counts.set(student.reason, (counts.get(student.reason) ?? 0) + 1)
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])
+}
 
 function RunResult({ run, periodLabel }: { run: AssessmentRun; periodLabel: string }) {
   return (
@@ -40,12 +49,28 @@ function RunResult({ run, periodLabel }: { run: AssessmentRun; periodLabel: stri
 
       {run.skipped > 0 && (
         <div className="flex flex-col gap-3 lg:min-h-0">
+          <ul className="shrink-0" aria-label="Motivos por los que no se evaluaron">
+            {reasons(run).map(([reason, count]) => (
+              <li
+                key={reason}
+                className="flex justify-between gap-4 border-b border-rule py-2 last:border-b-0"
+              >
+                <span>{reason}</span>
+                <span className="font-bold tabular-nums">
+                  {count} {count === 1 ? 'estudiante' : 'estudiantes'}
+                </span>
+              </li>
+            ))}
+          </ul>
           <p className="shrink-0 rounded-md bg-risk-medium-bg px-3 py-2 text-risk-medium">
             {run.skipped} {run.skipped === 1 ? 'estudiante no se pudo evaluar' : 'estudiantes no se pudieron evaluar'}{' '}
             por falta de datos. Complétalos en Carga de datos o pide la encuesta a la familia, y vuelve a
             ejecutar.
           </p>
-          <div className="lg:min-h-0 lg:overflow-y-auto">
+          <details className="lg:min-h-0 lg:overflow-y-auto">
+            <summary className="cursor-pointer font-bold text-accent">
+              Ver los {run.skipped} {run.skipped === 1 ? 'estudiante' : 'estudiantes'}
+            </summary>
             <Table caption="Estudiantes sin evaluar y el dato que falta">
               <TableHead>
                 <tr>
@@ -64,7 +89,7 @@ function RunResult({ run, periodLabel }: { run: AssessmentRun; periodLabel: stri
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </details>
         </div>
       )}
     </section>
@@ -76,7 +101,8 @@ export default function AssessmentsPage() {
   const run = useRunAssessment()
   const [periodId, setPeriodId] = useState<number | null>(null)
   const selectId = useId()
-  const period = periods.data?.find((item) => item.id === periodId) ?? periods.data?.[periods.data.length - 1]
+  const period =
+    periods.data?.find((item) => item.id === periodId) ?? latestWithGrades(periods.data)
 
   return (
     <div className="flex flex-col lg:h-full">
@@ -102,7 +128,7 @@ export default function AssessmentsPage() {
             >
               {periods.data?.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.label}
+                  {periodOptionLabel(item)}
                 </option>
               ))}
             </select>

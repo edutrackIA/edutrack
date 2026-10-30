@@ -9,8 +9,9 @@ import ImportsPage from './pages/ImportsPage'
 import ThresholdsPage from './pages/ThresholdsPage'
 
 const PERIODS = [
-  { id: 2, year: 2026, bimester: 2, start_date: '2026-05-18', end_date: '2026-07-17', label: 'Bimestre 2, 2026' },
-  { id: 3, year: 2026, bimester: 3, start_date: '2026-08-03', end_date: '2026-10-02', label: 'Bimestre 3, 2026' },
+  { id: 2, year: 2026, bimester: 2, start_date: '2026-05-18', end_date: '2026-07-17', label: 'Bimestre 2, 2026', has_grades: true },
+  { id: 3, year: 2026, bimester: 3, start_date: '2026-08-03', end_date: '2026-10-02', label: 'Bimestre 3, 2026', has_grades: true },
+  { id: 4, year: 2026, bimester: 4, start_date: '2026-10-12', end_date: '2026-12-18', label: 'Bimestre 4, 2026', has_grades: false },
 ]
 
 function importJob(preview: boolean, overrides: Record<string, unknown> = {}) {
@@ -119,31 +120,40 @@ describe('ImportsPage', () => {
 })
 
 describe('AssessmentsPage', () => {
-  it('runs the latest period and explains who could not be evaluated', async () => {
+  it('defaults to the latest period with grades and groups the missing data', async () => {
     const bodies: unknown[] = []
     mockApi({
       'GET /periods': () => json(PERIODS),
       'POST /risk-assessments/run': (init) => {
         bodies.push(JSON.parse(String(init?.body)))
         return json({
-          evaluated: 18,
-          skipped: 1,
+          evaluated: 17,
+          skipped: 3,
           model_version: 'rf-2026.10',
-          by_level: { LOW: 15, MEDIUM: 1, HIGH: 2 },
+          by_level: { LOW: 14, MEDIUM: 1, HIGH: 2 },
           skipped_students: [
             { student_id: 9, code: '20260009', full_name: 'Paredes, Adrián', reason: 'Sin encuesta familiar' },
+            { student_id: 10, code: '20260010', full_name: 'Quispe, Rosa', reason: 'Sin encuesta familiar' },
+            { student_id: 11, code: '20260011', full_name: 'Ríos, Marco', reason: 'Sin notas en el bimestre' },
           ],
         })
       },
     })
     renderPage(<AssessmentsPage />, { user: ANALYST_USER })
 
-    await userEvent.setup().click(await screen.findByRole('button', { name: 'Ejecutar evaluación' }))
+    const select = await screen.findByLabelText('Bimestre')
+    await vi.waitFor(() => expect(select).toHaveValue('3'))
+    expect(screen.getByRole('option', { name: 'Bimestre 4, 2026 (sin notas)' })).toBeInTheDocument()
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Ejecutar evaluación' }))
 
     expect(
-      await screen.findByRole('heading', { name: 'Bimestre 3, 2026: 18 estudiantes evaluados' }),
+      await screen.findByRole('heading', { name: 'Bimestre 3, 2026: 17 estudiantes evaluados' }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Sin encuesta familiar')).toBeInTheDocument()
+    const reasons = within(screen.getByRole('list', { name: 'Motivos por los que no se evaluaron' }))
+      .getAllByRole('listitem')
+      .map((item) => item.textContent)
+    expect(reasons).toEqual(['Sin encuesta familiar2 estudiantes', 'Sin notas en el bimestre1 estudiante'])
+    expect(screen.getByText('Ver los 3 estudiantes')).toBeInTheDocument()
     expect(bodies).toEqual([{ period_id: 3 }])
   })
 

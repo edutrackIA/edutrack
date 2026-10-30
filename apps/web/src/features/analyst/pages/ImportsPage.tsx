@@ -11,7 +11,7 @@ import {
   TableHeaderCell,
   TableRow,
 } from '../../../shared/ui/Table'
-import { usePeriods } from '../../periods/api'
+import { periodOptionLabel, usePeriods } from '../../periods/api'
 import { downloadTemplate, useImportFile, type ImportJob, type ImportKind } from '../api'
 
 const KINDS: { value: ImportKind; label: string; columns: string; note?: string }[] = [
@@ -221,7 +221,7 @@ export default function ImportsPage() {
               >
                 {periods.data?.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.label}
+                    {periodOptionLabel(item)}
                   </option>
                 ))}
               </select>
