@@ -14,11 +14,14 @@ from app.repositories.import_repository import ImportRepository
 from app.services.imports.importers import (
     AttendanceImporter,
     GradeImporter,
+    GuardianImporter,
     RowImporter,
     RowValidationError,
     StudentImporter,
 )
 from app.services.imports.parsing import FileFormatError, UnsupportedFileError, parse_file
+from app.services.invitation_service import InvitationService
+from app.services.notifications.email_sender import EmailSender
 
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024
 MAX_ROWS = 5000
@@ -31,12 +34,17 @@ TEMPLATES = {
     ),
     ImportKind.GRADES: "student_code,subject,score\n20260001,Matemática,15.5\n",
     ImportKind.ATTENDANCE: "student_code,date,status\n20260001,2026-03-10,PRESENT\n",
+    ImportKind.GUARDIANS: (
+        "student_code,full_name,email,kinship\n"
+        "20260001,Rosa Huamán Flores,rosa.huaman@correo.com,Madre\n"
+    ),
 }
 
 
 class ImportService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session, sender: EmailSender | None = None) -> None:
         self.db = db
+        self.sender = sender
         self.jobs = ImportRepository(db)
         self.academic = AcademicRepository(db)
         self.dry_run = False
@@ -101,7 +109,10 @@ class ImportService:
             except RowValidationError as exc:
                 errors.append(_error(line_number, exc.column, exc.message))
 
-        return self._finish(job, errors)
+        job = self._finish(job, errors)
+        if not self.dry_run:
+            importer.after_commit()
+        return job
 
     def get(self, user: User, job_id: int) -> ImportJob:
         job = self.jobs.get(job_id)
@@ -114,6 +125,9 @@ class ImportService:
             return StudentImporter(self.db, user.institution_id)
         if kind == ImportKind.ATTENDANCE:
             return AttendanceImporter(self.db, user.institution_id)
+        if kind == ImportKind.GUARDIANS:
+            invitations = InvitationService(self.db, self.sender)
+            return GuardianImporter(self.db, user.institution_id, invitations.invite)
 
         if period_id is None:
             raise UnprocessableError("period_id is required for grade imports")

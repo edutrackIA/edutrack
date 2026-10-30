@@ -7,6 +7,7 @@ from app.domain import ImportKind, Role, User
 from app.schemas.imports import ImportJobResponse
 from app.services import import_service
 from app.services.import_service import ImportService
+from app.services.notifications.email_sender import EmailSender, get_email_sender
 
 router = APIRouter(prefix="/imports", tags=["imports"])
 
@@ -19,11 +20,12 @@ def create_import(
     db: DbSession,
     kind: Annotated[ImportKind, Form()],
     file: Annotated[UploadFile, File()],
+    sender: Annotated[EmailSender, Depends(get_email_sender)],
     period_id: Annotated[int | None, Form()] = None,
     dry_run: Annotated[bool, Form()] = False,
 ) -> ImportJobResponse:
     content = file.file.read(import_service.MAX_UPLOAD_BYTES + 1)
-    job = ImportService(db).run(
+    job = ImportService(db, sender).run(
         user,
         kind=kind,
         filename=file.filename or "",
