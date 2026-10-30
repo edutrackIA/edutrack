@@ -110,7 +110,10 @@ def ensure_academic_data(db: Session, institution: Institution, users: dict[str,
         for n, start, end in BIMESTERS
     ]
     subjects = [
-        db.scalar(select(Subject).where(Subject.name == name)) or Subject(name=name)
+        db.scalar(
+            select(Subject).where(Subject.institution_id == institution.id, Subject.name == name)
+        )
+        or Subject(institution_id=institution.id, name=name)
         for name in SUBJECTS
     ]
     db.add_all(periods + subjects)

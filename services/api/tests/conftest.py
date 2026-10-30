@@ -169,7 +169,8 @@ def school(db_session: Session, institution: Institution) -> School:
     other_teacher = _user(db, institution.id, "teacher2@school.dev", Role.TEACHER)
     parent = _user(db, institution.id, "parent@school.dev", Role.PARENT)
 
-    math, language = Subject(name="Matemática"), Subject(name="Comunicación")
+    math = Subject(institution_id=institution.id, name="Matemática")
+    language = Subject(institution_id=institution.id, name="Comunicación")
     period = AcademicPeriod(
         institution_id=institution.id,
         year=2026,
