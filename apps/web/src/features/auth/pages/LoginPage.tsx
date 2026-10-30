@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { messageFor } from '../../../shared/api/errors'
 import { Button } from '../../../shared/ui/Button'
 import { ErrorMessage } from '../../../shared/ui/Feedback'
@@ -12,10 +12,9 @@ export default function LoginPage() {
   const { status, user, sessionExpired, login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  // After accepting an invitation, the acceptance page passes the email along.
-  const [email, setEmail] = useState(
-    () => (location.state as { email?: string } | null)?.email ?? '',
-  )
+  // Pages that send people here (invitation, reset, password change) pass the email along.
+  const state = location.state as { email?: string; notice?: string } | null
+  const [email, setEmail] = useState(() => state?.email ?? '')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -63,7 +62,15 @@ export default function LoginPage() {
           <p className="mt-2 text-ink-soft">Usa el correo que te asignó tu colegio.</p>
 
           <form className="mt-8 flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
-            {sessionExpired && !error && (
+            {state?.notice && !error && (
+              <p
+                role="status"
+                className="rounded-md border border-risk-low/30 bg-risk-low-bg px-4 py-3 text-risk-low"
+              >
+                {state.notice}
+              </p>
+            )}
+            {sessionExpired && !state?.notice && !error && (
               <p
                 role="status"
                 className="rounded-md border border-risk-medium/30 bg-risk-medium-bg px-4 py-3 text-risk-medium"
@@ -93,8 +100,10 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="mt-8 text-sm text-ink-soft">
-            ¿Olvidaste tu contraseña? Pide a la dirección de tu colegio que la restablezca.
+          <p className="mt-8">
+            <Link to="/recuperar" className="font-bold text-accent hover:underline">
+              ¿Olvidaste tu contraseña?
+            </Link>
           </p>
         </div>
       </section>

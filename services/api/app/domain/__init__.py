@@ -19,6 +19,7 @@ from app.domain.enums import (
     Sex,
     SituationAction,
     SituationKind,
+    TokenPurpose,
 )
 from app.domain.family_checkin import FamilyCheckin
 from app.domain.family_survey import FamilySurvey
@@ -73,6 +74,7 @@ __all__ = [
     "SituationEvent",
     "SituationKind",
     "StudentSituation",
+    "TokenPurpose",
     "Student",
     "Subject",
     "User",

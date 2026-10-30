@@ -3,6 +3,8 @@ import type { RouteObject } from 'react-router-dom'
 import { RequireAuth, RequireRole } from '../features/auth/guards'
 import LoginPage from '../features/auth/pages/LoginPage'
 import AcceptInvitationPage from '../features/auth/pages/AcceptInvitationPage'
+import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage'
+import ResetPasswordPage from '../features/auth/pages/ResetPasswordPage'
 import type { Role } from '../features/auth/types'
 import { AppLayout } from './layouts/AppLayout'
 import { HomeRedirect } from './pages/HomeRedirect'
@@ -24,6 +26,7 @@ const AssessmentsPage = lazy(() => import('../features/analyst/pages/Assessments
 const ThresholdsPage = lazy(() => import('../features/analyst/pages/ThresholdsPage'))
 const SchoolSetupPage = lazy(() => import('../features/school-setup/pages/SchoolSetupPage'))
 const ClassRegisterPage = lazy(() => import('../features/class-register/pages/ClassRegisterPage'))
+const AccountPage = lazy(() => import('../features/auth/pages/AccountPage'))
 const RecommendationsPage = lazy(
   () => import('../features/recommendations/pages/RecommendationsPage'),
 )
@@ -65,6 +68,13 @@ const SECTIONS: Section[] = [
     title: 'Recomendaciones',
     description: 'Revisa y aprueba las sugerencias antes de enviarlas a las familias.',
     page: RecommendationsPage,
+  },
+  {
+    path: 'mi-cuenta',
+    roles: ['DIRECTOR', 'TEACHER', 'ANALYST', 'PARENT'],
+    title: 'Mi cuenta',
+    description: 'Tus datos de acceso.',
+    page: AccountPage,
   },
   {
     path: 'configuracion',
@@ -121,6 +131,8 @@ export const routes: RouteObject[] = [
   { path: '/login', element: <LoginPage /> },
   // Public: invited guardians have no session yet.
   { path: '/invitacion/:token', element: <AcceptInvitationPage /> },
+  { path: '/recuperar', element: <ForgotPasswordPage /> },
+  { path: '/restablecer/:token', element: <ResetPasswordPage /> },
   {
     path: '/',
     element: (

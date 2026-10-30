@@ -198,3 +198,33 @@ class InvitationEmail:
             "Si no reconoce este correo, puede ignorarlo.</p>"
             "</body></html>"
         )
+
+
+@dataclass
+class PasswordResetEmail:
+    recipient_name: str
+    link: str
+    valid_minutes: int
+
+    subject = "EduTrack: restablece tu contraseña"
+
+    def text(self) -> str:
+        return (
+            f"Hola, {self.recipient_name}:\n\n"
+            "Recibimos una solicitud para restablecer tu contraseña de EduTrack.\n\n"
+            f"Crea una nueva en este enlace (vence en {self.valid_minutes} minutos):\n{self.link}\n\n"
+            "Si no fuiste tú, ignora este correo: tu contraseña actual sigue siendo válida.\n"
+        )
+
+    def html(self) -> str:
+        return (
+            '<!doctype html><html lang="es"><body style="font-family:Arial,sans-serif;'
+            'color:#1f2937;padding:24px">'
+            f"<p>Hola, {escape(self.recipient_name)}:</p>"
+            "<p>Recibimos una solicitud para restablecer tu contraseña de EduTrack.</p>"
+            f'<p><a href="{escape(self.link)}" style="background:#1168bd;color:#ffffff;'
+            'padding:12px 22px;border-radius:8px;text-decoration:none">Crear nueva contraseña</a></p>'
+            f'<p style="color:#6b7280;font-size:13px">El enlace vence en {self.valid_minutes} '
+            "minutos. Si no fuiste tú, ignora este correo: tu contraseña actual sigue siendo "
+            "válida.</p></body></html>"
+        )

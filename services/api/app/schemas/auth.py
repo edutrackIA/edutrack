@@ -27,3 +27,20 @@ class UserResponse(BaseModel):
     full_name: str
     role: Role
     institution_id: int
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=255)
+
+
+class ResetTarget(BaseModel):
+    email: str
+
+
+class NewPassword(BaseModel):
+    password: str = Field(min_length=1, max_length=128)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=1, max_length=128)
