@@ -16,10 +16,15 @@ class User(Base):
     id: Mapped[int] = mapped_column(BigIntPK, primary_key=True)
     institution_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("institutions.id"))
     email: Mapped[str] = mapped_column(String(255), unique=True)
-    password_hash: Mapped[str] = mapped_column(String(255))
+    # Null until an invited guardian creates their password.
+    password_hash: Mapped[str | None] = mapped_column(String(255))
     full_name: Mapped[str] = mapped_column(String(150))
     role: Mapped[Role] = mapped_column(Enum(Role, name="user_role"))
     is_active: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     institution: Mapped[Institution] = relationship()
+
+    @property
+    def has_access(self) -> bool:
+        return self.password_hash is not None

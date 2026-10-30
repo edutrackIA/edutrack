@@ -25,6 +25,7 @@ from app.domain.family_survey import FamilySurvey
 from app.domain.grade import BehaviorRecord, Grade
 from app.domain.import_job import ImportJob
 from app.domain.institution import Institution
+from app.domain.invitation import Invitation
 from app.domain.messaging import FamilyMessage, NotificationLog
 from app.domain.recommendation import Alert, Recommendation
 from app.domain.refresh_token import RefreshToken
@@ -57,6 +58,7 @@ __all__ = [
     "ImportKind",
     "ImportStatus",
     "Institution",
+    "Invitation",
     "NotificationLog",
     "ParentEducation",
     "Recommendation",

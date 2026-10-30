@@ -24,6 +24,7 @@ class ImportKind(StrEnum):
     STUDENTS = "STUDENTS"
     GRADES = "GRADES"
     ATTENDANCE = "ATTENDANCE"
+    GUARDIANS = "GUARDIANS"
 
 
 class ImportStatus(StrEnum):
