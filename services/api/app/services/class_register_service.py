@@ -292,7 +292,7 @@ class ClassRegisterService:
 
     @staticmethod
     def _students(classroom: Classroom) -> list[Student]:
-        return sorted(classroom.students, key=lambda s: (s.last_name, s.first_name))
+        return sorted(classroom.enrolled, key=lambda s: (s.last_name, s.first_name))
 
     @staticmethod
     def _identity(student: Student) -> dict[str, object]:
@@ -300,7 +300,7 @@ class ClassRegisterService:
 
     @staticmethod
     def _belongs(classroom: Classroom, student_ids: list[int]) -> None:
-        own = {student.id for student in classroom.students}
+        own = {student.id for student in classroom.enrolled}
         if len(student_ids) != len(set(student_ids)):
             raise _invalid("Un estudiante aparece más de una vez")
         if not set(student_ids) <= own:

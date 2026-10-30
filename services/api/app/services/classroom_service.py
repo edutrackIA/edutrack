@@ -20,4 +20,4 @@ class ClassroomService:
         if classroom is None:
             raise NotFoundError("Classroom not found")
         self.policy.ensure_can_view_classroom(user, classroom)
-        return sorted(classroom.students, key=lambda s: (s.last_name, s.first_name))
+        return sorted(classroom.enrolled, key=lambda s: (s.last_name, s.first_name))
