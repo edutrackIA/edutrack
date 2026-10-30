@@ -1,6 +1,6 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { DIRECTOR_USER, TEACHER_USER } from '../../test/fixtures'
 import { renderPage } from '../../test/render'
 import { json, mockApi } from '../../test/server'
@@ -201,6 +201,41 @@ describe('StudentRecordPage', () => {
 
     expect(await screen.findByText('Invitación enviada a rosa@correo.com.')).toBeInTheDocument()
     expect(bodies).toEqual([{ full_name: 'Rosa Huamán', email: 'rosa@correo.com', kinship: 'Madre' }])
+  })
+
+  it('lets the tutor register a meeting with the family', async () => {
+    const bodies: unknown[] = []
+    mockApi({
+      ...BASE_HANDLERS,
+      'GET /students/6/commitments': () => json([]),
+      'GET /students/6/surveys': FORBIDDEN,
+      'POST /students/6/commitments': (init) => {
+        bodies.push(JSON.parse(String(init?.body)))
+        return json({ id: 1 }, 201)
+      },
+    })
+    renderPage(<StudentRecordPage />, {
+      user: TEACHER_USER,
+      route: '/estudiantes/:studentId',
+      path: '/estudiantes/6',
+    })
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('button', { name: 'Registrar acta' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Registrar acta' })
+    fireEvent.change(within(dialog).getByLabelText('Fecha de la reunión'), {
+      target: { value: '2026-10-20' },
+    })
+    await user.type(within(dialog).getByLabelText('Acuerdos'), 'Revisar tareas cada noche.')
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar acta' }))
+
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toEqual({
+      guardian_id: 4,
+      meeting_date: '2026-10-20',
+      agreements: 'Revisar tareas cada noche.',
+      follow_up_date: null,
+    })
   })
 
   it('goes back to the page that opened the record', async () => {
