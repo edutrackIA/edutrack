@@ -359,3 +359,13 @@ def outbox() -> Iterator[Outbox]:
     app.dependency_overrides[get_email_sender] = lambda: box
     yield box
     app.dependency_overrides.pop(get_email_sender, None)
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limits() -> Iterator[None]:
+    """Failed-attempt counters live in memory; every test starts with a clean slate."""
+    from app.core.rate_limit import ALL_LIMITERS
+
+    for limiter in ALL_LIMITERS:
+        limiter.clear()
+    yield
