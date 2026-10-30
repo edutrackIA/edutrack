@@ -6,7 +6,9 @@ import { formatDate, formatPercent, formatScore } from '../../../shared/lib/form
 import { EmptyState, ErrorMessage, LoadingState } from '../../../shared/ui/Feedback'
 import { PageHeader } from '../../../shared/ui/PageHeader'
 import { RiskBadge } from '../../../shared/ui/RiskBadge'
+import { useAuth } from '../../auth/auth-context'
 import { classroomLabel, useClassrooms } from '../../classrooms/api'
+import { GuardiansCard } from '../../guardians/GuardiansCard'
 import { usePeriods, type Period } from '../../periods/api'
 import { useStudentSituations, type Situation } from '../../situations/api'
 import { SituationChip } from '../../situations/components/SituationChip'
@@ -287,6 +289,8 @@ export default function StudentRecordPage() {
   const commitments = useStudentCommitments(studentId)
   const surveys = useStudentSurveys(studentId)
   const situations = useStudentSituations(studentId)
+  const { user } = useAuth()
+  const managesGuardians = user?.role === 'DIRECTOR' || user?.role === 'ANALYST'
   const periods = usePeriods()
   const classrooms = useClassrooms()
 
@@ -377,6 +381,12 @@ export default function StudentRecordPage() {
             )
           ) : (
             commitments.data && <CommitmentsCard commitments={commitments.data} />
+          )}
+          {managesGuardians && (
+            <GuardiansCard
+              studentId={studentId}
+              studentName={`${detail.last_name}, ${detail.first_name}`}
+            />
           )}
           {/* Teachers never see socio-family data: the section is simply not shown. */}
           {surveys.data?.[0] && <SurveyCard survey={surveys.data[0]} periods={periods.data} />}
