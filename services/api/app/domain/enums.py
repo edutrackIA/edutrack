@@ -111,3 +111,8 @@ class HomeChange(StrEnum):
     CARING_FAMILY = "CARING_FAMILY"
     ECONOMIC = "ECONOMIC"
     OTHER = "OTHER"
+
+
+class TokenPurpose(StrEnum):
+    INVITATION = "INVITATION"
+    PASSWORD_RESET = "PASSWORD_RESET"
