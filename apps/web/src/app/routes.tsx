@@ -2,6 +2,7 @@ import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from 're
 import type { RouteObject } from 'react-router-dom'
 import { RequireAuth, RequireRole } from '../features/auth/guards'
 import LoginPage from '../features/auth/pages/LoginPage'
+import AcceptInvitationPage from '../features/auth/pages/AcceptInvitationPage'
 import type { Role } from '../features/auth/types'
 import { AppLayout } from './layouts/AppLayout'
 import { HomeRedirect } from './pages/HomeRedirect'
@@ -102,6 +103,8 @@ const SECTIONS: Section[] = [
 
 export const routes: RouteObject[] = [
   { path: '/login', element: <LoginPage /> },
+  // Public: invited guardians have no session yet.
+  { path: '/invitacion/:token', element: <AcceptInvitationPage /> },
   {
     path: '/',
     element: (

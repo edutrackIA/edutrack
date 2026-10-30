@@ -11,6 +11,11 @@ const MESSAGES: Record<string, string> = {
   EMAIL_NOT_SENT: 'El servidor de correo no respondió. Inténtalo de nuevo en unos minutos.',
   NO_FAMILY_CONTACT:
     'El estudiante no tiene un apoderado con correo registrado, así que no hay a quién enviarlo.',
+  INVITATION_EXPIRED:
+    'Este enlace ya no es válido: venció o ya se usó. Pide al colegio que te envíe uno nuevo.',
+  INVITATION_NOT_FOUND:
+    'Este enlace ya no es válido: venció o ya se usó. Pide al colegio que te envíe uno nuevo.',
+  ALREADY_HAS_ACCESS: 'Este apoderado ya creó su contraseña; no necesita otra invitación.',
   FILE_TOO_LARGE: 'El archivo es demasiado grande. El límite es de 2 MB.',
   UNSUPPORTED_FILE_TYPE: 'Solo se aceptan archivos .csv o .xlsx.',
 }

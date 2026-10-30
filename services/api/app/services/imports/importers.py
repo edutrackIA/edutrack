@@ -1,12 +1,13 @@
-from collections.abc import Hashable
+from collections.abc import Callable, Hashable
 from datetime import date, datetime
 
 from sqlalchemy.orm import Session
 
-from app.domain import Attendance, AttendanceStatus, Grade, Sex, Student, Subject
+from app.domain import Attendance, AttendanceStatus, Grade, Sex, Student, Subject, User
 from app.repositories.academic_repository import AcademicRepository
 from app.repositories.classroom_repository import ClassroomRepository
 from app.repositories.student_repository import StudentRepository
+from app.services.guardian_links import GuardianLinkError, link_guardian
 
 ATTENDANCE_ALIASES = {
     "PRESENT": AttendanceStatus.PRESENT,
@@ -48,6 +49,9 @@ class RowImporter:
 
     def import_row(self, row: dict[str, str]) -> None:
         raise NotImplementedError
+
+    def after_commit(self) -> None:
+        """Side effects that must only happen once the rows are saved (e.g. emails)."""
 
     def _student(self, row: dict[str, str], column: str = "student_code") -> Student:
         code = _required(row, column)
@@ -214,3 +218,37 @@ def _parse_date(row: dict[str, str], column: str) -> date:
         except ValueError:
             continue
     raise RowValidationError(column, f"{raw} no es una fecha válida (AAAA-MM-DD o DD/MM/AAAA)")
+
+
+class GuardianImporter(RowImporter):
+    """Creates parent accounts without password and invites them after the import is saved."""
+
+    required_columns = ("student_code", "full_name", "email")
+
+    def __init__(self, db: Session, institution_id: int, invite: Callable[[User], bool]) -> None:
+        super().__init__(db, institution_id)
+        self.db = db
+        self.invite = invite
+        self.to_invite: dict[int, User] = {}
+
+    def key(self, row: dict[str, str]) -> Hashable:
+        return (row.get("student_code", "").strip(), row.get("email", "").strip().lower())
+
+    def import_row(self, row: dict[str, str]) -> None:
+        student = self._student(row)
+        try:
+            link = link_guardian(
+                self.db,
+                student,
+                full_name=_required(row, "full_name"),
+                email=_required(row, "email"),
+                kinship=row.get("kinship", ""),
+            )
+        except GuardianLinkError as exc:
+            raise RowValidationError(exc.column, exc.message) from exc
+        if not link.user.has_access:
+            self.to_invite[link.user.id] = link.user
+
+    def after_commit(self) -> None:
+        for user in self.to_invite.values():
+            self.invite(user)

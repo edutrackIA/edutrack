@@ -27,7 +27,9 @@ class AuthService:
 
     def login(self, email: str, password: str) -> TokenResponse:
         user = self.users.get_by_email(email)
-        if user is None:
+        if user is None or user.password_hash is None:
+            # Same work as a real check, so timing does not reveal which accounts exist
+            # or which guardians have not accepted their invitation yet.
             verify_password(password, dummy_password_hash())
             raise self._invalid_credentials()
         if not verify_password(password, user.password_hash) or not user.is_active:
