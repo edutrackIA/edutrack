@@ -14,6 +14,10 @@ const STUDENT = {
   birth_date: '2012-04-10',
   sex: 'F',
   classroom_id: 1,
+  status: 'ENROLLED',
+  exit_date: null,
+  exit_reason: null,
+  exit_note: null,
   guardians: [{ id: 4, email: 'padre@edutrack.dev', full_name: 'Rosa Huamán', role: 'PARENT', institution_id: 1 }],
   latest_risk: null,
 }
@@ -236,6 +240,57 @@ describe('StudentRecordPage', () => {
       agreements: 'Revisar tareas cada noche.',
       follow_up_date: null,
     })
+  })
+
+  it('lets the director register that a student left the school', async () => {
+    const bodies: unknown[] = []
+    mockApi({
+      ...BASE_HANDLERS,
+      'GET /students/6/commitments': () => json([]),
+      'GET /students/6/surveys': () => json([]),
+      'POST /students/6/withdrawal': (init) => {
+        bodies.push(JSON.parse(String(init?.body)))
+        return json({ ...STUDENT, status: 'WITHDRAWN' })
+      },
+    })
+    renderPage(<StudentRecordPage />, {
+      user: DIRECTOR_USER,
+      route: '/estudiantes/:studentId',
+      path: '/estudiantes/6',
+    })
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('button', { name: 'Registrar retiro o traslado' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Registrar retiro o traslado' })
+    await user.selectOptions(within(dialog).getByLabelText('Motivo'), 'WORK')
+    expect(within(dialog).getByText(/Se registra como deserción/)).toBeInTheDocument()
+    fireEvent.change(within(dialog).getByLabelText('Fecha de salida'), {
+      target: { value: '2026-10-20' },
+    })
+    await user.click(within(dialog).getByRole('button', { name: 'Registrar salida' }))
+
+    await vi.waitFor(() =>
+      expect(bodies).toEqual([{ exit_date: '2026-10-20', reason: 'WORK', note: null }]),
+    )
+  })
+
+  it('tells everyone that the student is no longer enrolled', async () => {
+    mockApi({
+      ...BASE_HANDLERS,
+      'GET /students/6': () =>
+        json({ ...STUDENT, status: 'WITHDRAWN', exit_date: '2026-10-20', exit_reason: 'WORK' }),
+      'GET /students/6/commitments': FORBIDDEN,
+      'GET /students/6/surveys': FORBIDDEN,
+    })
+
+    renderPage(<StudentRecordPage />, {
+      user: TEACHER_USER,
+      route: '/estudiantes/:studentId',
+      path: '/estudiantes/6',
+    })
+
+    expect(await screen.findByText(/Se retiró el 20 de octubre de 2026: Trabajo/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Revertir salida' })).not.toBeInTheDocument()
   })
 
   it('goes back to the page that opened the record', async () => {

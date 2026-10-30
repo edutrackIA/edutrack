@@ -88,4 +88,46 @@ describe('SchoolSetupPage', () => {
 
     await vi.waitFor(() => expect(bodies).toEqual([{ classroom_id: 1, subject_id: 1, teacher_id: 2 }]))
   })
+
+  it('previews the year closing and applies it after confirming', async () => {
+    const requests: { dry_run: boolean; repeating_codes: string[] }[] = []
+    const plan = {
+      year: 2026,
+      moves: [
+        { source: '3° A (2026)', target: '4° A (2027)', students: 9 },
+        { source: '3° A (2026)', target: '3° A (2027)', students: 1 },
+      ],
+      promoted: 9,
+      repeating: 1,
+      graduated: 0,
+      unknown_codes: [],
+    }
+    mockApi({
+      'GET /classrooms': () =>
+        json([{ id: 1, year: 2026, grade: 3, section: 'A', tutor: null, student_count: 10 }]),
+      'POST /school-years/2026/promotion': (init) => {
+        const body = JSON.parse(String(init?.body))
+        requests.push(body)
+        return json({ ...plan, applied: !body.dry_run })
+      },
+    })
+    renderPage(<SchoolSetupPage />, { user: DIRECTOR_USER, path: '/?seccion=cierre' })
+    const user = userEvent.setup()
+
+    await user.type(
+      await screen.findByLabelText('Códigos de quienes repiten el grado (opcional)'),
+      '20260007',
+    )
+    await user.click(screen.getByRole('button', { name: 'Ver plan' }))
+    expect(await screen.findByText('9 pasan de grado, 1 repiten y 0 egresan.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Aplicar cierre de año' }))
+    await user.click(screen.getByRole('button', { name: 'Sí, cerrar el año' }))
+
+    expect(await screen.findByRole('heading', { name: 'Año 2026 cerrado' })).toBeInTheDocument()
+    expect(requests.map((r) => [r.dry_run, r.repeating_codes])).toEqual([
+      [true, ['20260007']],
+      [false, ['20260007']],
+    ])
+  })
 })

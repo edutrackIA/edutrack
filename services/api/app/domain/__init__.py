@@ -6,6 +6,7 @@ from app.domain.course_assignment import CourseAssignment
 from app.domain.enums import (
     AttendanceStatus,
     CommitmentStatus,
+    ExitReason,
     FamilyMessageKind,
     FamilyMessageStatus,
     FamilyMood,
@@ -19,6 +20,7 @@ from app.domain.enums import (
     Sex,
     SituationAction,
     SituationKind,
+    StudentStatus,
     TokenPurpose,
 )
 from app.domain.family_checkin import FamilyCheckin
@@ -46,6 +48,7 @@ __all__ = [
     "Commitment",
     "CommitmentStatus",
     "CourseAssignment",
+    "ExitReason",
     "FamilyCheckin",
     "FamilyMessage",
     "FamilyMessageKind",
@@ -74,6 +77,7 @@ __all__ = [
     "SituationEvent",
     "SituationKind",
     "StudentSituation",
+    "StudentStatus",
     "TokenPurpose",
     "Student",
     "Subject",

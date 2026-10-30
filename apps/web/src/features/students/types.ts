@@ -18,6 +18,20 @@ export interface RiskAssessment {
   created_at: string
 }
 
+export type StudentStatus = 'ENROLLED' | 'WITHDRAWN' | 'TRANSFERRED' | 'GRADUATED'
+
+export type ExitReason =
+  | 'TRANSFER'
+  | 'WORK'
+  | 'ECONOMIC'
+  | 'FAMILY'
+  | 'HEALTH'
+  | 'PREGNANCY'
+  | 'DISTANCE'
+  | 'DISENGAGEMENT'
+  | 'UNKNOWN'
+  | 'GRADUATION'
+
 export interface StudentDetail {
   id: number
   code: string
@@ -26,6 +40,10 @@ export interface StudentDetail {
   birth_date: string
   sex: 'M' | 'F'
   classroom_id: number
+  status: StudentStatus
+  exit_date: string | null
+  exit_reason: ExitReason | null
+  exit_note: string | null
   guardians: User[]
   latest_risk: RiskAssessment | null
 }

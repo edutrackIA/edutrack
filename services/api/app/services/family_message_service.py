@@ -16,6 +16,7 @@ from app.domain import (
     Role,
     SituationKind,
     Student,
+    StudentStatus,
     User,
 )
 from app.repositories.messaging_repository import MessagingRepository
@@ -143,6 +144,7 @@ def students_with_guardians(db: Session) -> list[Student]:
     query = (
         select(Student)
         .join(Guardianship, Guardianship.student_id == Student.id)
+        .where(Student.status == StudentStatus.ENROLLED)
         .distinct()
         .order_by(Student.id)
     )
