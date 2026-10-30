@@ -94,7 +94,17 @@ class EnrollmentService:
         targets: dict[tuple[int, str], Classroom] = {}
 
         for classroom in classrooms:
-            for student in classroom.enrolled:
+            # Asked to the database, not read from classroom.students: a collection loaded
+            # earlier in the session would still list students already moved out.
+            enrolled = self.db.scalars(
+                select(Student)
+                .where(
+                    Student.classroom_id == classroom.id,
+                    Student.status == StudentStatus.ENROLLED,
+                )
+                .order_by(Student.id)
+            ).all()
+            for student in enrolled:
                 known.add(student.code)
                 source = f"{classroom.label} ({year})"
                 if student.code in repeating:
