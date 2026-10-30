@@ -1,6 +1,10 @@
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEV_JWT_SECRET = "dev-only-secret-change-me-in-env-file-0123456789"
+MIN_SECRET_LENGTH = 32
 
 
 class Settings(BaseSettings):
@@ -13,7 +17,7 @@ class Settings(BaseSettings):
     ml_service_url: str = "http://localhost:8001"
     cors_origins: list[str] = ["http://localhost:5173"]
 
-    jwt_secret: str = "dev-only-secret-change-me-in-env-file-0123456789"
+    jwt_secret: str = DEV_JWT_SECRET
     jwt_algorithm: str = "HS256"
     access_token_ttl_minutes: int = 15
     refresh_token_ttl_days: int = 7
@@ -27,6 +31,26 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = False
     mail_from: str = "EduTrack <no-reply@edutrack.dev>"
     portal_url: str = "http://localhost:5173"
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
+
+    @model_validator(mode="after")
+    def safe_for_production(self) -> "Settings":
+        """Refuse to start in production with development defaults."""
+        if not self.is_production:
+            return self
+        problems = []
+        if self.jwt_secret == DEV_JWT_SECRET or len(self.jwt_secret) < MIN_SECRET_LENGTH:
+            problems.append(f"API_JWT_SECRET must be a random value of {MIN_SECRET_LENGTH}+ chars")
+        if "*" in self.cors_origins:
+            problems.append("API_CORS_ORIGINS cannot be '*'")
+        if not self.portal_url.startswith("https://"):
+            problems.append("API_PORTAL_URL must use https")
+        if problems:
+            raise ValueError("; ".join(problems))
+        return self
 
 
 @lru_cache

@@ -3,7 +3,7 @@ from datetime import date
 from typing import Annotated
 
 import jwt
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -56,3 +56,8 @@ def get_school_today() -> date:
 
 
 SchoolToday = Annotated[date, Depends(get_school_today)]
+
+
+def client_address(request: Request) -> str:
+    """Address used to group failed attempts. Behind a proxy, configure it to pass the real IP."""
+    return request.client.host if request.client else "unknown"
