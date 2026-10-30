@@ -6,6 +6,7 @@ from app.api.routes import (
     classrooms,
     commitments,
     dashboard,
+    enrollment,
     family_checkins,
     family_messages,
     guardians,
@@ -40,3 +41,4 @@ api_router.include_router(guardians.router)
 api_router.include_router(invitations.router)
 api_router.include_router(school_setup.router)
 api_router.include_router(class_register.router)
+api_router.include_router(enrollment.router)
