@@ -57,10 +57,11 @@ export function AppLayout() {
       <div className="flex min-w-0 flex-col lg:min-h-0">
         <header className="flex shrink-0 flex-wrap items-center justify-end gap-4 border-b border-rule bg-surface px-6 py-3">
           <ThemeToggle />
-          <div className="text-right">
-            <p className="font-bold text-ink">{user.full_name}</p>
-            <p className="text-sm text-ink-soft">{ROLE_LABELS[user.role]}</p>
-          </div>
+          <Link to="/mi-cuenta" className="rounded-md px-2 py-1 text-right hover:bg-paper">
+            <span className="block font-bold text-ink">{user.full_name}</span>
+            <span className="block text-sm text-ink-soft">{ROLE_LABELS[user.role]}</span>
+            <span className="sr-only"> (mi cuenta)</span>
+          </Link>
           <Button variant="secondary" onClick={() => void logout()}>
             Cerrar sesión
           </Button>
