@@ -12,7 +12,10 @@ export default function LoginPage() {
   const { status, user, sessionExpired, login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [email, setEmail] = useState('')
+  // After accepting an invitation, the acceptance page passes the email along.
+  const [email, setEmail] = useState(
+    () => (location.state as { email?: string } | null)?.email ?? '',
+  )
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
