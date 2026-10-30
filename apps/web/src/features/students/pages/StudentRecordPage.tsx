@@ -23,6 +23,7 @@ import {
 } from '../api'
 import { formatFactorValue } from '../factor-format'
 import { CommitmentsCard } from '../components/CommitmentsCard'
+import { ExitBanner, WithdrawalAction } from '../components/EnrollmentCard'
 import { RiskFactors } from '../components/RiskFactors'
 import { backLink } from '../navigation'
 import type { FamilySurvey, Grade, Recommendation, RiskAssessment } from '../types'
@@ -289,11 +290,13 @@ export default function StudentRecordPage() {
         </Link>
       </p>
       <PageHeader
+        actions={managesGuardians && <WithdrawalAction student={detail} />}
         title={`${detail.last_name}, ${detail.first_name}`}
         description={`${classroomName}, código ${detail.code}. Apoderado: ${
           guardians || 'sin registrar'
         }.`}
       />
+      <ExitBanner student={detail} canManage={managesGuardians} />
 
       {summary.data && summary.data.period_id !== null && (
         <dl className="mb-8 flex flex-wrap gap-x-12 gap-y-4">
