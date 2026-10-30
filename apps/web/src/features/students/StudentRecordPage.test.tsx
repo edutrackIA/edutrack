@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { DIRECTOR_USER, TEACHER_USER } from '../../test/fixtures'
 import { renderPage } from '../../test/render'
@@ -71,6 +72,8 @@ const BASE_HANDLERS: Record<string, () => Response> = {
 }
 
 const FORBIDDEN = () => json({ code: 'FORBIDDEN', message: 'No' }, 403)
+
+BASE_HANDLERS['GET /students/6/guardians'] = () => json([])
 
 BASE_HANDLERS['GET /students/6/situations'] = () =>
   json([
@@ -159,6 +162,45 @@ describe('StudentRecordPage', () => {
     expect(await screen.findByText('Supervisar una hora diaria de estudio.')).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Encuesta familiar' })).toBeInTheDocument()
     expect(screen.getByText('6 h por semana')).toBeInTheDocument()
+  })
+
+  it('lets the director register a guardian and see the invitation result', async () => {
+    const bodies: unknown[] = []
+    mockApi({
+      ...BASE_HANDLERS,
+      'GET /students/6/commitments': () => json([]),
+      'GET /students/6/surveys': () => json([]),
+      'POST /students/6/guardians': (init) => {
+        bodies.push(JSON.parse(String(init?.body)))
+        return json(
+          {
+            id: 30,
+            full_name: 'Rosa Huamán',
+            email: 'rosa@correo.com',
+            kinship: 'Madre',
+            has_access: false,
+            invitation_sent: true,
+          },
+          201,
+        )
+      },
+    })
+    renderPage(<StudentRecordPage />, {
+      user: DIRECTOR_USER,
+      route: '/estudiantes/:studentId',
+      path: '/estudiantes/6',
+    })
+    const user = userEvent.setup()
+
+    expect(await screen.findByText(/Sin apoderados registrados/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Agregar apoderado' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Agregar apoderado' })
+    await user.type(within(dialog).getByLabelText('Nombre completo'), 'Rosa Huamán')
+    await user.type(within(dialog).getByLabelText('Correo'), 'rosa@correo.com')
+    await user.click(within(dialog).getByRole('button', { name: 'Registrar apoderado' }))
+
+    expect(await screen.findByText('Invitación enviada a rosa@correo.com.')).toBeInTheDocument()
+    expect(bodies).toEqual([{ full_name: 'Rosa Huamán', email: 'rosa@correo.com', kinship: 'Madre' }])
   })
 
   it('goes back to the page that opened the record', async () => {
