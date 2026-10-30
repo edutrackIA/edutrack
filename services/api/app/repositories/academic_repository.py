@@ -89,8 +89,17 @@ class AcademicRepository:
     def get_subject(self, subject_id: int) -> Subject | None:
         return self.db.get(Subject, subject_id)
 
-    def get_subject_by_name(self, name: str) -> Subject | None:
-        return self.db.scalar(select(Subject).where(func.lower(Subject.name) == name.lower()))
+    def get_subject_by_name(self, institution_id: int, name: str) -> Subject | None:
+        return self.db.scalar(
+            select(Subject).where(
+                Subject.institution_id == institution_id,
+                func.lower(Subject.name) == name.strip().lower(),
+            )
+        )
+
+    def list_subjects(self, institution_id: int) -> list[Subject]:
+        query = select(Subject).where(Subject.institution_id == institution_id)
+        return list(self.db.scalars(query.order_by(Subject.name)))
 
     def list_grades(self, student_id: int, period_id: int | None = None) -> list[Grade]:
         query = (

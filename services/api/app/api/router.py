@@ -14,6 +14,7 @@ from app.api.routes import (
     periods,
     recommendations,
     risk,
+    school_setup,
     settings,
     situations,
     students,
@@ -36,3 +37,4 @@ api_router.include_router(family_messages.router)
 api_router.include_router(family_checkins.router)
 api_router.include_router(guardians.router)
 api_router.include_router(invitations.router)
+api_router.include_router(school_setup.router)

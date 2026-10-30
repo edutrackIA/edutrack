@@ -152,7 +152,7 @@ class GradeImporter(RowImporter):
     def _subject(self, name: str) -> Subject:
         key = name.lower()
         if key not in self._subjects:
-            self._subjects[key] = self.academic.get_subject_by_name(name)
+            self._subjects[key] = self.academic.get_subject_by_name(self.institution_id, name)
         subject = self._subjects[key]
         if subject is None:
             raise RowValidationError("subject", f"El curso {name} no existe")

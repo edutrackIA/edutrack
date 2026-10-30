@@ -7,12 +7,18 @@ from app.core.config import get_settings
 from app.core.errors import ConflictError, NotFoundError, UnprocessableError
 from app.core.security import hash_password, hash_url_token, new_url_token, password_problems
 from app.core.time import utcnow
-from app.domain import Guardianship, Institution, Invitation, Student, User
+from app.domain import Guardianship, Institution, Invitation, Role, Student, User
 from app.services.notifications.delivery import deliver
 from app.services.notifications.email_sender import EmailSender
 from app.services.notifications.templates import InvitationEmail
 
 INVITATION_DAYS = 7
+
+STAFF_ROLES = {
+    Role.DIRECTOR: "parte de la dirección",
+    Role.TEACHER: "docente",
+    Role.ANALYST: "responsable de análisis de datos",
+}
 
 
 class InvitationService:
@@ -77,15 +83,9 @@ class InvitationService:
         if self.sender is None:
             return False
         institution = self.db.get(Institution, user.institution_id)
-        students = self.db.scalars(
-            select(Student)
-            .join(Guardianship, Guardianship.student_id == Student.id)
-            .where(Guardianship.guardian_id == user.id)
-            .order_by(Student.first_name)
-        ).all()
         email = InvitationEmail(
-            guardian_name=user.full_name.split()[0],
-            student_names=[student.first_name for student in students],
+            recipient_name=user.full_name.split()[0],
+            registered_as=self._registered_as(user),
             institution_name=institution.name if institution else "Su colegio",
             link=f"{get_settings().portal_url}/invitacion/{raw_token}",
             valid_days=INVITATION_DAYS,
@@ -93,3 +93,14 @@ class InvitationService:
         return deliver(
             self.sender, to=user.email, subject=email.subject, text=email.text(), html=email.html()
         )
+
+    def _registered_as(self, user: User) -> str:
+        if user.role != Role.PARENT:
+            return STAFF_ROLES[user.role]
+        names = self.db.scalars(
+            select(Student.first_name)
+            .join(Guardianship, Guardianship.student_id == Student.id)
+            .where(Guardianship.guardian_id == user.id)
+            .order_by(Student.first_name)
+        ).all()
+        return f"apoderado de {' y '.join(names)}" if names else "apoderado"
