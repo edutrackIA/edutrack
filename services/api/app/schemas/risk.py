@@ -51,6 +51,8 @@ class RunRiskRequest(BaseModel):
 
 class SkippedStudent(BaseModel):
     student_id: int
+    code: str
+    full_name: str
     reason: str
 
 

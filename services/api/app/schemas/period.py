@@ -12,9 +12,11 @@ class PeriodResponse(BaseModel):
     start_date: date
     end_date: date
     label: str
+    # Lets the UI default to a period that can actually be evaluated.
+    has_grades: bool
 
     @classmethod
-    def from_model(cls, period: AcademicPeriod) -> "PeriodResponse":
+    def from_model(cls, period: AcademicPeriod, *, has_grades: bool) -> "PeriodResponse":
         return cls(
             id=period.id,
             year=period.year,
@@ -22,4 +24,5 @@ class PeriodResponse(BaseModel):
             start_date=period.start_date,
             end_date=period.end_date,
             label=f"Bimestre {period.bimester}, {period.year}",
+            has_grades=has_grades,
         )
