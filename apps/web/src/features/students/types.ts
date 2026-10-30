@@ -64,6 +64,7 @@ export type CommitmentStatus = 'OPEN' | 'FULFILLED' | 'BREACHED'
 
 export interface Commitment {
   id: number
+  guardian_id: number
   meeting_date: string
   agreements: string
   follow_up_date: string | null
