@@ -26,5 +26,10 @@ class Classroom(Base):
     students: Mapped[list["Student"]] = relationship(back_populates="classroom")
 
     @property
+    def enrolled(self) -> list["Student"]:
+        """Students currently in the classroom (not withdrawn, transferred or graduated)."""
+        return [student for student in self.students if student.is_enrolled]
+
+    @property
     def label(self) -> str:
         return f"{self.grade}° {self.section}"

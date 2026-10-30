@@ -116,3 +116,25 @@ class HomeChange(StrEnum):
 class TokenPurpose(StrEnum):
     INVITATION = "INVITATION"
     PASSWORD_RESET = "PASSWORD_RESET"
+
+
+class StudentStatus(StrEnum):
+    ENROLLED = "ENROLLED"
+    # Left the education system: the outcome the risk model tries to anticipate.
+    WITHDRAWN = "WITHDRAWN"
+    # Moved to another school: not a dropout.
+    TRANSFERRED = "TRANSFERRED"
+    GRADUATED = "GRADUATED"
+
+
+class ExitReason(StrEnum):
+    TRANSFER = "TRANSFER"
+    WORK = "WORK"
+    ECONOMIC = "ECONOMIC"
+    FAMILY = "FAMILY"
+    HEALTH = "HEALTH"
+    PREGNANCY = "PREGNANCY"
+    DISTANCE = "DISTANCE"
+    DISENGAGEMENT = "DISENGAGEMENT"
+    UNKNOWN = "UNKNOWN"
+    GRADUATION = "GRADUATION"
