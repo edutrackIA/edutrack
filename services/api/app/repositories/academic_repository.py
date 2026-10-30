@@ -9,6 +9,7 @@ from app.domain import (
     AttendanceStatus,
     BehaviorRecord,
     Grade,
+    Student,
     Subject,
 )
 
@@ -24,6 +25,15 @@ class AcademicRepository:
             .order_by(AcademicPeriod.start_date)
         )
         return list(self.db.scalars(query))
+
+    def periods_with_grades(self, institution_id: int) -> set[int]:
+        query = (
+            select(Grade.period_id)
+            .join(Student, Student.id == Grade.student_id)
+            .where(Student.institution_id == institution_id)
+            .distinct()
+        )
+        return set(self.db.scalars(query))
 
     def get_period(self, period_id: int) -> AcademicPeriod | None:
         return self.db.get(AcademicPeriod, period_id)
