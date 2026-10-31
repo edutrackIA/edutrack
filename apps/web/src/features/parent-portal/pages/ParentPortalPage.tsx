@@ -123,7 +123,9 @@ function ChildPortal({ studentId, fullName }: { studentId: number; fullName: str
         <Card title="Seguimiento del mes">
           {checkin.data ? (
             <MonthlyCheckinForm
-              key={checkin.data.checkin?.id ?? 'new'}
+              // One form per child and month: saving the first answer must not remount it,
+              // or the confirmation message would vanish.
+              key={`${studentId}-${checkin.data.month}`}
               studentId={studentId}
               name={name}
               month={checkin.data.month}
