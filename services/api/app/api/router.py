@@ -16,6 +16,7 @@ from app.api.routes import (
     model_monitoring,
     models,
     periods,
+    privacy,
     recommendations,
     risk,
     school_setup,
@@ -46,3 +47,4 @@ api_router.include_router(class_register.router)
 api_router.include_router(enrollment.router)
 api_router.include_router(model_monitoring.router)
 api_router.include_router(models.router)
+api_router.include_router(privacy.router)
