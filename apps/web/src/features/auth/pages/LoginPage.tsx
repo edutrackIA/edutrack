@@ -105,6 +105,11 @@ export default function LoginPage() {
               ¿Olvidaste tu contraseña?
             </Link>
           </p>
+          <p className="mt-3 text-sm">
+            <Link to="/privacidad" className="text-ink-soft underline hover:text-ink">
+              Aviso de privacidad
+            </Link>
+          </p>
         </div>
       </section>
     </main>
