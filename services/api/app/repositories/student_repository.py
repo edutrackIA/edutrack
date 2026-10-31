@@ -1,5 +1,5 @@
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.domain import Guardianship, Student, StudentStatus
 
@@ -27,7 +27,9 @@ class StudentRepository:
         )
         if classroom_id is not None:
             query = query.where(Student.classroom_id == classroom_id)
-        return list(self.db.scalars(query.order_by(Student.id)))
+        return list(
+            self.db.scalars(query.order_by(Student.id).options(joinedload(Student.classroom)))
+        )
 
     def list_for_guardian(self, guardian_id: int) -> list[Student]:
         query = (
