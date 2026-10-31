@@ -72,6 +72,7 @@ describe('authentication', () => {
       'POST /auth/refresh': () => json({ ...TOKENS, refresh_token: 'refresh-2' }),
       'GET /auth/me': () => json(PARENT),
       'GET /me/children': () => json([]),
+      'GET /me/privacy': () => json({ version: '2026-11', accepted_at: '2026-11-01T10:00:00' }),
     })
 
     const router = renderApp('/')
@@ -99,6 +100,7 @@ describe('authentication', () => {
       'POST /auth/refresh': () => json(TOKENS),
       'GET /auth/me': () => json(PARENT),
       'GET /me/children': () => json([]),
+      'GET /me/privacy': () => json({ version: '2026-11', accepted_at: '2026-11-01T10:00:00' }),
     })
 
     renderApp('/resumen')
