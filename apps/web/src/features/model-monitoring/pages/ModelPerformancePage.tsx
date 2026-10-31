@@ -16,6 +16,7 @@ import {
 } from '../../../shared/ui/Table'
 import { useAuth } from '../../auth/auth-context'
 import { EXIT_REASONS } from '../../students/components/EnrollmentCard'
+import { ModelVersionsSection } from '../components/ModelVersionsSection'
 import {
   downloadDataset,
   useModelPerformance,
@@ -202,6 +203,11 @@ export default function ModelPerformancePage() {
           </p>
           {data.metrics ? <Metrics metrics={data.metrics} /> : <NotEnoughData data={data} />}
           <Cases data={data} />
+        </div>
+      )}
+      {(user?.role === 'DIRECTOR' || user?.role === 'ANALYST') && (
+        <div className="mt-10">
+          <ModelVersionsSection role={user.role} />
         </div>
       )}
     </>
