@@ -80,23 +80,29 @@ class ModelMonitoringService:
             cases=self._cases(dropouts),
         )
 
-    def dataset_csv(self, user: User) -> str:
-        """Anonymized training rows: model features and the real outcome, no identifiers."""
+    def training_rows(self, user: User) -> list[dict[str, object]]:
+        """Model features and real outcome per known assessment, without identifiers."""
         builder = FeatureBuilder(self.db)
-        output = io.StringIO()
-        writer: csv.DictWriter[str] | None = None
+        rows: list[dict[str, object]] = []
         for _, student, period in self._latest_assessments(user.institution_id):
             outcome = self._outcome(student, period)
             if outcome is None:
                 continue
             built = builder.build(student, period)
-            if built.features is None:
-                continue
-            row = {**built.features, "dropout": int(outcome)}
+            if built.features is not None:
+                rows.append({"features": built.features, "dropout": outcome})
+        return rows
+
+    def dataset_csv(self, user: User) -> str:
+        """The training rows as an anonymized CSV."""
+        output = io.StringIO()
+        writer: csv.DictWriter[str] | None = None
+        for row in self.training_rows(user):
+            record = {**row["features"], "dropout": int(bool(row["dropout"]))}  # type: ignore[dict-item]
             if writer is None:
-                writer = csv.DictWriter(output, fieldnames=list(row))
+                writer = csv.DictWriter(output, fieldnames=list(record))
                 writer.writeheader()
-            writer.writerow(row)
+            writer.writerow(record)
         return output.getvalue()
 
     # --- Internos ------------------------------------------------------------------------
