@@ -14,6 +14,7 @@ from app.api.routes import (
     imports,
     invitations,
     model_monitoring,
+    models,
     periods,
     recommendations,
     risk,
@@ -44,3 +45,4 @@ api_router.include_router(school_setup.router)
 api_router.include_router(class_register.router)
 api_router.include_router(enrollment.router)
 api_router.include_router(model_monitoring.router)
+api_router.include_router(models.router)

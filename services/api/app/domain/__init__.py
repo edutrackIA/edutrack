@@ -13,6 +13,7 @@ from app.domain.enums import (
     HomeChange,
     ImportKind,
     ImportStatus,
+    ModelAction,
     ParentEducation,
     RecommendationStatus,
     RiskLevel,
@@ -30,6 +31,7 @@ from app.domain.import_job import ImportJob
 from app.domain.institution import Institution
 from app.domain.invitation import Invitation
 from app.domain.messaging import FamilyMessage, NotificationLog
+from app.domain.model_event import ModelEvent
 from app.domain.recommendation import Alert, Recommendation
 from app.domain.refresh_token import RefreshToken
 from app.domain.risk import RiskAssessment, RiskThreshold
@@ -63,6 +65,8 @@ __all__ = [
     "ImportStatus",
     "Institution",
     "Invitation",
+    "ModelAction",
+    "ModelEvent",
     "NotificationLog",
     "ParentEducation",
     "Recommendation",

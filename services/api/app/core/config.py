@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     environment: str = "development"
     database_url: str = "mysql+pymysql://edutrack:edutrack@localhost:3306/edutrack"
     ml_service_url: str = "http://localhost:8001"
+    # Shared secret with the ML service to train and activate models (ML_ADMIN_TOKEN there).
+    ml_admin_token: str = ""
     cors_origins: list[str] = ["http://localhost:5173"]
 
     jwt_secret: str = DEV_JWT_SECRET

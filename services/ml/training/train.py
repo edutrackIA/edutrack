@@ -23,7 +23,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split
 
 from app.features import FEATURE_NAMES
-from app.model_store import ModelBundle, save_model
+from app.model_store import ModelBundle, save_version, set_active
 from training.dataset import TARGET, generate_dataset
 from training.vif import select_features
 
@@ -36,6 +36,30 @@ FULL_GRID = {
     "model__min_samples_leaf": [1, 3],
 }
 QUICK_GRID = {"model__n_estimators": [50], "model__max_depth": [8]}
+
+
+def fit_search(
+    x_train: np.ndarray, y_train: np.ndarray, seed: int, grid: dict[str, Any], folds: int
+) -> GridSearchCV:
+    """SMOTE + Random Forest tuned by cross-validated F1.
+
+    SMOTE lives inside the pipeline so it only oversamples training folds:
+    validation folds and the test set keep the real class balance.
+    """
+    pipeline = Pipeline(
+        [
+            ("smote", SMOTE(random_state=seed)),
+            ("model", RandomForestClassifier(random_state=seed, n_jobs=-1)),
+        ]
+    )
+    search = GridSearchCV(
+        pipeline,
+        grid,
+        scoring="f1",
+        cv=StratifiedKFold(n_splits=folds, shuffle=True, random_state=seed),
+    )
+    search.fit(x_train, y_train)
+    return search
 
 
 @dataclass
@@ -55,21 +79,9 @@ def train(n_samples: int = 4000, seed: int = 42, quick: bool = False) -> Trainin
         random_state=seed,
     )
 
-    # SMOTE lives inside the pipeline so it only oversamples training folds:
-    # validation folds and the test set keep the real class balance.
-    pipeline = Pipeline(
-        [
-            ("smote", SMOTE(random_state=seed)),
-            ("model", RandomForestClassifier(random_state=seed, n_jobs=-1)),
-        ]
+    search = fit_search(
+        x_train, y_train, seed, QUICK_GRID if quick else FULL_GRID, 3 if quick else 5
     )
-    search = GridSearchCV(
-        pipeline,
-        QUICK_GRID if quick else FULL_GRID,
-        scoring="f1",
-        cv=StratifiedKFold(n_splits=3 if quick else 5, shuffle=True, random_state=seed),
-    )
-    search.fit(x_train, y_train)
     model: RandomForestClassifier = search.best_estimator_.named_steps["model"]
 
     probabilities = model.predict_proba(x_test)[:, 1]
@@ -125,7 +137,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     result = train(args.samples, args.seed, args.quick)
-    save_model(result.bundle, args.output)
+    # Registered as a new version and activated, so the service picks it up on restart.
+    save_version(result.bundle, args.output)
+    set_active(args.output, result.bundle.version)
     if args.export_dataset is not None:
         args.export_dataset.parent.mkdir(parents=True, exist_ok=True)
         generate_dataset(args.samples, args.seed).to_csv(args.export_dataset, index=False)

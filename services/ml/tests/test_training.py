@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from app.features import FEATURE_NAMES
-from app.model_store import load_model
+from app.model_store import load_active
 from training.dataset import TARGET, generate_dataset
 from training.train import main, meets_requirements
 from training.vif import compute_vif, select_features
@@ -62,5 +62,5 @@ def test_cli_trains_and_saves_model(tmp_path: Path) -> None:
     )
 
     assert exit_code in (0, 1)
-    assert load_model(tmp_path / "models") is not None
+    assert load_active(tmp_path / "models") is not None
     assert dataset.exists()
