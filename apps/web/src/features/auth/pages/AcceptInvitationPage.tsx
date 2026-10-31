@@ -4,8 +4,8 @@ import { messageFor } from '../../../shared/api/errors'
 import { Button } from '../../../shared/ui/Button'
 import { ErrorMessage, LoadingState } from '../../../shared/ui/Feedback'
 import { ThemeToggle } from '../../../shared/ui/ThemeToggle'
-import { isValidNewPassword, NewPasswordFields } from '../components/NewPasswordFields'
-import { useAcceptInvitation, useInvitation } from '../invitations'
+import { NewPasswordFields } from '../components/NewPasswordFields'
+import { isValidNewPassword, useAcceptInvitation, useInvitation } from '../invitations'
 
 /** Public page where an invited guardian creates their password. */
 export default function AcceptInvitationPage() {

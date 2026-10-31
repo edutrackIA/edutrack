@@ -6,20 +6,8 @@ import { formatDate } from '../../../shared/lib/format'
 import { Button } from '../../../shared/ui/Button'
 import { ErrorMessage } from '../../../shared/ui/Feedback'
 import { Modal } from '../../../shared/ui/Modal'
+import { EXIT_REASONS } from '../exitReasons'
 import type { ExitReason, StudentDetail, StudentStatus } from '../types'
-
-export const EXIT_REASONS: Record<ExitReason, string> = {
-  TRANSFER: 'Traslado a otro colegio',
-  WORK: 'Trabajo',
-  ECONOMIC: 'Situación económica',
-  FAMILY: 'Situación familiar',
-  HEALTH: 'Salud',
-  PREGNANCY: 'Embarazo o paternidad',
-  DISTANCE: 'Distancia o transporte',
-  DISENGAGEMENT: 'Desmotivación',
-  UNKNOWN: 'No se conoce el motivo',
-  GRADUATION: 'Egreso',
-}
 
 const STATUS_LABELS: Record<Exclude<StudentStatus, 'ENROLLED'>, string> = {
   WITHDRAWN: 'Se retiró',

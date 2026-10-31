@@ -92,6 +92,27 @@ describe('ParentPortalPage', () => {
     ])
   })
 
+  it('keeps the confirmation after the first answer of the month is saved', async () => {
+    let saved: Record<string, unknown> | null = null
+    mockPortal({
+      // Once saved, the server returns the follow-up with its id, as in production.
+      'GET /students/1/family-checkins/current': () =>
+        json({ month: '2026-10-01', checkin: saved }),
+      'PUT /students/1/family-checkins/current': (init) => {
+        saved = { id: 7, month: '2026-10-01', ...JSON.parse(String(init?.body)) }
+        return json(saved)
+      },
+    })
+    renderPage(<ParentPortalPage />, { user: PARENT })
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByLabelText('Lo vemos bien'))
+    await user.click(screen.getByRole('button', { name: 'Enviar respuesta' }))
+
+    expect(await screen.findByRole('button', { name: 'Actualizar respuesta' })).toBeInTheDocument()
+    expect(screen.getByText('Gracias. El tutor recibió su respuesta de octubre.')).toBeInTheDocument()
+  })
+
   it('asks for the family survey of the current period', async () => {
     const bodies: unknown[] = []
     mockPortal({

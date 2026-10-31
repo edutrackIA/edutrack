@@ -3,3 +3,6 @@ uvicorn[standard]>=0.32,<1.0
 pydantic-settings>=2.6,<3.0
 scikit-learn>=1.5,<2.0
 joblib>=1.4
+# Retraining with school data runs inside the service (POST /v1/models/train).
+pandas>=2.2,<3.0
+imbalanced-learn>=0.12
