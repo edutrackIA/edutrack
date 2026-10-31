@@ -63,10 +63,9 @@ def resolve_data_request(
 def export_student_data(student_id: int, user: Director, db: DbSession) -> Response:
     """Everything kept about a student, to answer an access request."""
     data = PrivacyService(db).export_student(user, student_id)
+    filename = f"expediente-{data['student']['code']}.json"
     return Response(
         content=json.dumps(data, ensure_ascii=False, indent=2),
         media_type="application/json",
-        headers={
-            "Content-Disposition": f'attachment; filename="expediente-{data["student"]["code"]}.json"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
