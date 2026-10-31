@@ -9,6 +9,7 @@ import { useAuth } from '../auth-context'
 import { isValidNewPassword, NewPasswordFields } from '../components/NewPasswordFields'
 import { useChangePassword } from '../passwords'
 import { ROLE_LABELS } from '../roles'
+import { MyDataRequests } from '../../privacy/components/MyDataRequests'
 
 export default function AccountPage() {
   const { user, logout } = useAuth()
@@ -95,6 +96,7 @@ export default function AccountPage() {
           </form>
         </section>
       </div>
+      {user.role === 'PARENT' && <MyDataRequests />}
     </>
   )
 }
