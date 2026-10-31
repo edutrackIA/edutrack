@@ -13,6 +13,7 @@ from app.services.access_policy import AccessPolicy
 from app.services.notifications.delivery import deliver
 from app.services.notifications.email_sender import EmailSender
 from app.services.notifications.templates import StaffNoticeEmail
+from app.services.privacy_service import PrivacyService
 
 
 class FamilyCheckinService:
@@ -32,6 +33,7 @@ class FamilyCheckinService:
 
     def submit(self, user: User, student_id: int, data: FamilyCheckinInput) -> FamilyCheckin:
         """Create or edit this month's check-in. Each edit goes back to the tutor."""
+        PrivacyService(self.db).ensure_consent(user)
         student = self._get_student(student_id)
         self.policy.ensure_is_guardian(user, student)
 
