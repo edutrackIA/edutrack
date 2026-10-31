@@ -1,9 +1,18 @@
-"""Create demo data for local development. Safe to run more than once."""
+"""Create demo data for local development. Safe to run more than once.
 
+    python -m scripts.seed_dev                 # demo school: 20 students in 3° A and 3° B
+    python -m scripts.seed_dev --size large    # plus 18 classrooms of 30 (about 560 students)
+
+Students follow coherent profiles (grades, attendance, conduct and family survey move
+together), so the risk model yields the three levels instead of an all-green school.
+"""
+
+import argparse
 import random
+from dataclasses import dataclass
 from datetime import date, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
@@ -67,6 +76,82 @@ LAST_NAMES = [
     "Vargas", "Paredes", "Gutiérrez", "Rojas", "Salas", "Córdova",
 ]
 # fmt: on
+
+
+@dataclass(frozen=True)
+class Profile:
+    """How a demo student does at school and at home."""
+
+    score: tuple[float, float]
+    absence: tuple[float, float]
+    behavior: tuple[int, int]
+    study_hours: tuple[int, int]
+    internet: float
+    device: float
+    communication: tuple[int, int]
+    works: float
+    education: tuple[ParentEducation, ...]
+
+
+HIGH = Profile(
+    score=(7.5, 10.0),
+    absence=(0.16, 0.24),
+    behavior=(1, 2),
+    study_hours=(1, 4),
+    internet=0.2,
+    device=0.2,
+    communication=(1, 2),
+    works=0.6,
+    education=(ParentEducation.NONE, ParentEducation.PRIMARY),
+)
+MEDIUM = Profile(
+    score=(10.0, 12.0),
+    absence=(0.08, 0.13),
+    behavior=(2, 3),
+    study_hours=(4, 8),
+    internet=0.6,
+    device=0.6,
+    communication=(2, 3),
+    works=0.2,
+    education=(ParentEducation.PRIMARY, ParentEducation.SECONDARY),
+)
+LOW = Profile(
+    score=(13.0, 17.5),
+    absence=(0.0, 0.04),
+    behavior=(4, 5),
+    study_hours=(8, 20),
+    internet=0.95,
+    device=0.9,
+    communication=(4, 5),
+    works=0.02,
+    education=(ParentEducation.SECONDARY, ParentEducation.TECHNICAL, ParentEducation.UNIVERSITY),
+)
+# Out of every 20 students: 3 at high risk, 4 at moderate risk, the rest doing well.
+HIGH_POSITIONS = {2, 7, 13}
+MEDIUM_POSITIONS = {4, 9, 15, 18}
+
+DEMO_CLASSROOMS = [(3, "A"), (3, "B")]
+LARGE_CLASSROOMS = [
+    (grade, section)
+    for grade in range(1, 6)
+    for section in "ABCD"
+    if (grade, section) not in DEMO_CLASSROOMS
+]
+LARGE_CLASS_SIZE = 30
+
+
+def profile_for(index: int) -> Profile:
+    position = index % 20
+    if position in HIGH_POSITIONS:
+        return HIGH
+    if position in MEDIUM_POSITIONS:
+        return MEDIUM
+    return LOW
+
+
+def code_index(student: Student) -> int:
+    """Demo codes are YEAR + a running number; the number decides the profile."""
+    return int(student.code[-4:]) - 1
 
 
 def get_or_create_institution(db: Session) -> Institution:
@@ -136,10 +221,28 @@ def ensure_academic_data(db: Session, institution: Institution, users: dict[str,
             for subject in subjects
         )
 
-    students: list[Student] = []
-    for index in range(20):
+    students = create_students(db, institution, [classroom_a] * 10 + [classroom_b] * 10, 0, rng)
+
+    db.add(
+        Guardianship(
+            guardian_id=users["padre@edutrack.dev"].id, student_id=students[0].id, kinship="Madre"
+        )
+    )
+    add_grades(db, students, periods[:3], subjects, rng)
+    return True
+
+
+def create_students(
+    db: Session,
+    institution: Institution,
+    classrooms: list[Classroom],
+    first: int,
+    rng: random.Random,
+) -> list[Student]:
+    students = []
+    for offset, classroom in enumerate(classrooms):
+        index = first + offset
         first_name, sex = FIRST_NAMES[index % len(FIRST_NAMES)]
-        classroom = classroom_a if index < 10 else classroom_b
         students.append(
             Student(
                 institution_id=institution.id,
@@ -147,49 +250,99 @@ def ensure_academic_data(db: Session, institution: Institution, users: dict[str,
                 code=f"{YEAR}{index + 1:04d}",
                 first_name=first_name,
                 last_name=f"{rng.choice(LAST_NAMES)} {rng.choice(LAST_NAMES)}",
-                birth_date=date(YEAR - 14, rng.randint(1, 12), rng.randint(1, 28)),
+                birth_date=date(
+                    YEAR - 11 - classroom.grade, rng.randint(1, 12), rng.randint(1, 28)
+                ),
                 sex=sex,
             )
         )
     db.add_all(students)
     db.flush()
+    return students
 
-    db.add(
-        Guardianship(
-            guardian_id=users["padre@edutrack.dev"].id, student_id=students[0].id, kinship="Madre"
-        )
-    )
 
+def add_grades(
+    db: Session,
+    students: list[Student],
+    periods: list[AcademicPeriod],
+    subjects: list[Subject],
+    rng: random.Random,
+) -> None:
+    grades, behavior = [], []
     for student in students:
-        base = rng.uniform(9, 18)
-        for period in periods[:3]:
+        profile = profile_for(code_index(student))
+        base = rng.uniform(*profile.score)
+        for period in periods:
             for subject in subjects:
-                score = min(20.0, max(0.0, rng.gauss(base, 2)))
-                db.add(
-                    Grade(
-                        student_id=student.id,
-                        subject_id=subject.id,
-                        period_id=period.id,
-                        score=round(score, 1),
-                    )
+                score = min(20.0, max(0.0, rng.gauss(base, 1.5)))
+                grades.append(
+                    {
+                        "student_id": student.id,
+                        "subject_id": subject.id,
+                        "period_id": period.id,
+                        "score": round(score, 1),
+                    }
                 )
-            db.add(
-                BehaviorRecord(student_id=student.id, period_id=period.id, rating=rng.randint(2, 5))
+            behavior.append(
+                {
+                    "student_id": student.id,
+                    "period_id": period.id,
+                    "rating": rng.randint(*profile.behavior),
+                }
             )
-    return True
+    # Bulk inserts: the large school has tens of thousands of rows.
+    db.execute(insert(Grade), grades)
+    db.execute(insert(BehaviorRecord), behavior)
 
 
-def ensure_attendance(db: Session, institution: Institution) -> bool:
-    exists = db.scalar(
-        select(Attendance.id)
-        .join(Student, Student.id == Attendance.student_id)
-        .where(Student.institution_id == institution.id)
-        .limit(1)
+def ensure_large_school(db: Session, institution: Institution) -> int:
+    """Extra classrooms to measure performance with a school of realistic size."""
+    existing = {
+        (classroom.grade, classroom.section)
+        for classroom in db.scalars(
+            select(Classroom).where(
+                Classroom.institution_id == institution.id, Classroom.year == YEAR
+            )
+        )
+    }
+    missing = [key for key in LARGE_CLASSROOMS if key not in existing]
+    if not missing:
+        return 0
+    rng = random.Random(99)
+    classrooms = [
+        Classroom(institution_id=institution.id, year=YEAR, grade=grade, section=section)
+        for grade, section in missing
+    ]
+    db.add_all(classrooms)
+    db.flush()
+    count = len(
+        db.scalars(select(Student.id).where(Student.institution_id == institution.id)).all()
     )
-    if exists:
-        return False
+    seats = [classroom for classroom in classrooms for _ in range(LARGE_CLASS_SIZE)]
+    students = create_students(db, institution, seats, count, rng)
+    periods = db.scalars(
+        select(AcademicPeriod)
+        .where(AcademicPeriod.institution_id == institution.id, AcademicPeriod.bimester <= 3)
+        .order_by(AcademicPeriod.bimester)
+    ).all()
+    subjects = db.scalars(select(Subject).where(Subject.institution_id == institution.id)).all()
+    add_grades(db, students, list(periods), list(subjects), rng)
+    return len(students)
 
-    students = db.scalars(select(Student).where(Student.institution_id == institution.id)).all()
+
+def ensure_attendance(db: Session, institution: Institution) -> int:
+    """Attendance for every school day of the first three periods, per student profile.
+
+    Only students without any attendance yet get it, so new classrooms are filled too.
+    """
+    students = db.scalars(
+        select(Student).where(Student.institution_id == institution.id).order_by(Student.code)
+    ).all()
+    with_attendance = set(db.scalars(select(Attendance.student_id).distinct()))
+    pending = [student for student in students if student.id not in with_attendance]
+    if not pending:
+        return 0
+
     periods = db.scalars(
         select(AcademicPeriod)
         .where(AcademicPeriod.institution_id == institution.id, AcademicPeriod.bimester <= 3)
@@ -209,17 +362,21 @@ def ensure_attendance(db: Session, institution: Institution) -> bool:
         AttendanceStatus.LATE,
         AttendanceStatus.JUSTIFIED,
     ]
-    for student in students:
-        absence_rate = rng.choice([0.02, 0.04, 0.06, 0.12, 0.2])
-        weights = [1 - absence_rate * 1.5, absence_rate, absence_rate * 0.3, absence_rate * 0.2]
-        db.add_all(
-            Attendance(student_id=student.id, date=day, status=rng.choices(statuses, weights)[0])
-            for day in school_days
+    for student in pending:
+        rate = rng.uniform(*profile_for(code_index(student)).absence)
+        weights = [1 - rate * 1.5, rate, rate * 0.3, rate * 0.2]
+        db.execute(
+            insert(Attendance),
+            [
+                {"student_id": student.id, "date": day, "status": rng.choices(statuses, weights)[0]}
+                for day in school_days
+            ],
         )
-    return True
+    return len(pending)
 
 
-def ensure_surveys(db: Session, institution: Institution, users: dict[str, User]) -> bool:
+def ensure_surveys(db: Session, institution: Institution, users: dict[str, User]) -> int:
+    """First-period family survey for every student who has none, per profile."""
     students = db.scalars(
         select(Student).where(Student.institution_id == institution.id).order_by(Student.code)
     ).all()
@@ -229,29 +386,31 @@ def ensure_surveys(db: Session, institution: Institution, users: dict[str, User]
         )
     )
     if not students or first_period is None:
-        return False
-    if db.scalar(select(FamilySurvey.id).where(FamilySurvey.student_id == students[0].id)):
-        return False
+        return 0
+    answered = set(db.scalars(select(FamilySurvey.student_id).distinct()))
+    pending = [student for student in students if student.id not in answered]
 
     rng = random.Random(11)
     parent = users["padre@edutrack.dev"]
     analyst = users["analista@edutrack.dev"]
-    for index, student in enumerate(students):
+    for student in pending:
+        index = code_index(student)
+        profile = profile_for(index)
         db.add(
             FamilySurvey(
                 student_id=student.id,
                 period_id=first_period.id,
                 responder_id=parent.id if index == 0 else analyst.id,
-                study_hours_week=rng.randint(2, 20),
-                parent_education=rng.choice(list(ParentEducation)),
-                home_internet=rng.random() < 0.8,
-                has_study_device=rng.random() < 0.75,
-                family_communication=rng.randint(1, 5),
-                student_works=rng.random() < 0.1,
-                household_size=rng.randint(2, 8),
+                study_hours_week=rng.randint(*profile.study_hours),
+                parent_education=rng.choice(profile.education),
+                home_internet=rng.random() < profile.internet,
+                has_study_device=rng.random() < profile.device,
+                family_communication=rng.randint(*profile.communication),
+                student_works=rng.random() < profile.works,
+                household_size=rng.randint(3, 8) if profile is HIGH else rng.randint(2, 6),
             )
         )
-    return True
+    return len(pending)
 
 
 def ensure_commitments(db: Session, users: dict[str, User]) -> bool:
@@ -281,20 +440,31 @@ def ensure_commitments(db: Session, users: dict[str, User]) -> bool:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--size",
+        choices=["demo", "large"],
+        default="demo",
+        help="large adds about 560 students to measure performance",
+    )
+    args = parser.parse_args()
+
     with SessionLocal() as db:
         institution = get_or_create_institution(db)
         users = ensure_users(db, institution)
         created = ensure_academic_data(db, institution, users)
         db.flush()
-        attendance_created = ensure_attendance(db, institution)
-        surveys_created = ensure_surveys(db, institution, users)
+        extra = ensure_large_school(db, institution) if args.size == "large" else 0
+        attendance = ensure_attendance(db, institution)
+        surveys = ensure_surveys(db, institution, users)
         commitments_created = ensure_commitments(db, users)
         db.commit()
 
     print(f"Demo users ready ({len(DEMO_USERS)}), password {DEMO_PASSWORD!r}.")
     print("Academic data created." if created else "Academic data already exists.")
-    print("Attendance created." if attendance_created else "Attendance already exists.")
-    print("Surveys created." if surveys_created else "Surveys already exist.")
+    if extra:
+        print(f"Large school: {extra} students added.")
+    print(f"Attendance added for {attendance} students; surveys for {surveys}.")
     print("Commitments created." if commitments_created else "Commitments already exist.")
 
 
