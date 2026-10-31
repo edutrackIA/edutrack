@@ -3,9 +3,12 @@ from app.domain.attendance import Attendance
 from app.domain.classroom import Classroom
 from app.domain.commitment import Commitment
 from app.domain.course_assignment import CourseAssignment
+from app.domain.data_request import DataRequest, PrivacyConsent
 from app.domain.enums import (
     AttendanceStatus,
     CommitmentStatus,
+    DataRequestKind,
+    DataRequestStatus,
     ExitReason,
     FamilyMessageKind,
     FamilyMessageStatus,
@@ -50,6 +53,9 @@ __all__ = [
     "Commitment",
     "CommitmentStatus",
     "CourseAssignment",
+    "DataRequest",
+    "DataRequestKind",
+    "DataRequestStatus",
     "ExitReason",
     "FamilyCheckin",
     "FamilyMessage",
@@ -68,6 +74,7 @@ __all__ = [
     "ModelAction",
     "ModelEvent",
     "NotificationLog",
+    "PrivacyConsent",
     "ParentEducation",
     "Recommendation",
     "RecommendationStatus",
