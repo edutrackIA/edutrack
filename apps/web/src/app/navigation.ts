@@ -11,6 +11,7 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     { to: '/aulas', label: 'Aulas' },
     { to: '/recomendaciones', label: 'Recomendaciones' },
     { to: '/modelo', label: 'Modelo' },
+    { to: '/solicitudes-de-datos', label: 'Solicitudes de datos' },
     { to: '/configuracion', label: 'Configuración' },
   ],
   TEACHER: [
