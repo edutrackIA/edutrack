@@ -5,6 +5,7 @@ import LoginPage from '../features/auth/pages/LoginPage'
 import AcceptInvitationPage from '../features/auth/pages/AcceptInvitationPage'
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage'
 import ResetPasswordPage from '../features/auth/pages/ResetPasswordPage'
+import PrivacyPage from '../features/privacy/pages/PrivacyPage'
 import type { Role } from '../features/auth/types'
 import { AppLayout } from './layouts/AppLayout'
 import { HomeRedirect } from './pages/HomeRedirect'
@@ -30,6 +31,7 @@ const AccountPage = lazy(() => import('../features/auth/pages/AccountPage'))
 const ModelPerformancePage = lazy(
   () => import('../features/model-monitoring/pages/ModelPerformancePage'),
 )
+const DataRequestsPage = lazy(() => import('../features/privacy/pages/DataRequestsPage'))
 const RecommendationsPage = lazy(
   () => import('../features/recommendations/pages/RecommendationsPage'),
 )
@@ -78,6 +80,13 @@ const SECTIONS: Section[] = [
     title: 'Rendimiento del modelo',
     description: 'Alertas frente a retiros reales.',
     page: ModelPerformancePage,
+  },
+  {
+    path: 'solicitudes-de-datos',
+    roles: ['DIRECTOR'],
+    title: 'Solicitudes de datos',
+    description: 'Derechos de las familias sobre sus datos.',
+    page: DataRequestsPage,
   },
   {
     path: 'mi-cuenta',
@@ -143,6 +152,7 @@ export const routes: RouteObject[] = [
   { path: '/invitacion/:token', element: <AcceptInvitationPage /> },
   { path: '/recuperar', element: <ForgotPasswordPage /> },
   { path: '/restablecer/:token', element: <ResetPasswordPage /> },
+  { path: '/privacidad', element: <PrivacyPage /> },
   {
     path: '/',
     element: (

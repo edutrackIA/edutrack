@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useUnreadAlertsCount } from '../../features/alerts/api'
 import { useAuth } from '../../features/auth/auth-context'
+import { ConsentGate } from '../../features/privacy/components/ConsentGate'
 import { ROLE_LABELS } from '../../features/auth/roles'
 import { Button } from '../../shared/ui/Button'
 import { ThemeToggle } from '../../shared/ui/ThemeToggle'
@@ -69,7 +70,9 @@ export function AppLayout() {
         {/* Pages scroll inside this area, never the whole window. */}
         <div className="flex-1 lg:min-h-0 lg:overflow-y-auto">
           <main id="contenido" className="mx-auto w-full max-w-7xl px-6 py-6 lg:h-full lg:px-10">
-            <Outlet />
+            <ConsentGate>
+              <Outlet />
+            </ConsentGate>
           </main>
         </div>
       </div>

@@ -143,3 +143,16 @@ class ExitReason(StrEnum):
 class ModelAction(StrEnum):
     TRAINED = "TRAINED"
     ACTIVATED = "ACTIVATED"
+
+
+class DataRequestKind(StrEnum):
+    ACCESS = "ACCESS"
+    RECTIFICATION = "RECTIFICATION"
+    CANCELLATION = "CANCELLATION"
+    OPPOSITION = "OPPOSITION"
+
+
+class DataRequestStatus(StrEnum):
+    PENDING = "PENDING"
+    RESOLVED = "RESOLVED"
+    REJECTED = "REJECTED"
