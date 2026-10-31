@@ -15,7 +15,7 @@ import {
   TableRow,
 } from '../../../shared/ui/Table'
 import { useAuth } from '../../auth/auth-context'
-import { EXIT_REASONS } from '../../students/components/EnrollmentCard'
+import { EXIT_REASONS } from '../../students/exitReasons'
 import { ModelVersionsSection } from '../components/ModelVersionsSection'
 import {
   downloadDataset,

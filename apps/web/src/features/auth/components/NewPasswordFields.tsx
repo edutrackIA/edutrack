@@ -44,7 +44,3 @@ export function NewPasswordFields({
     </>
   )
 }
-
-export function isValidNewPassword(password: string, confirmation: string): boolean {
-  return passwordChecks(password, confirmation).every((check) => check.ok)
-}

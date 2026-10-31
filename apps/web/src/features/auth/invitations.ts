@@ -34,3 +34,7 @@ export function passwordChecks(password: string, confirmation: string) {
     { label: 'Ambas contraseñas coinciden', ok: password.length > 0 && password === confirmation },
   ]
 }
+
+export function isValidNewPassword(password: string, confirmation: string): boolean {
+  return passwordChecks(password, confirmation).every((check) => check.ok)
+}
