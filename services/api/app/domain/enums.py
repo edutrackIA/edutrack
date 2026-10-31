@@ -138,3 +138,8 @@ class ExitReason(StrEnum):
     DISENGAGEMENT = "DISENGAGEMENT"
     UNKNOWN = "UNKNOWN"
     GRADUATION = "GRADUATION"
+
+
+class ModelAction(StrEnum):
+    TRAINED = "TRAINED"
+    ACTIVATED = "ACTIVATED"
