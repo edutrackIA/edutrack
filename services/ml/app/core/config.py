@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     app_name: str = "EduTrack ML Service"
     version: str = "0.1.0"
     model_dir: str = "models"
+    # Shared secret the API sends to train and activate models. Empty disables those actions.
+    admin_token: str = ""
 
 
 @lru_cache
