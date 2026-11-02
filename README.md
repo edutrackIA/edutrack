@@ -2,11 +2,35 @@
 
 Plataforma web de seguimiento académico y alerta temprana del riesgo de desaprobación y deserción escolar en estudiantes de secundaria, basada en Machine Learning.
 
-> 🚧 Proyecto en desarrollo.
+> **Versión 1.0.0** · Ver el [registro de cambios](CHANGELOG.md).
 
 ## Descripción
 
-EduTrack centraliza calificaciones, asistencia y variables sociofamiliares de los estudiantes. Con esos datos, un modelo de clasificación supervisada (Random Forest) estima el nivel de riesgo de cada alumno y lo muestra en dashboards con semáforos (bajo, moderado y alto) para directores, docentes, tutores y padres de familia. Además, genera sugerencias pedagógicas preventivas.
+EduTrack centraliza calificaciones, asistencia, conducta y variables sociofamiliares de los estudiantes. Con esos datos, un modelo de clasificación supervisada (Random Forest) estima el riesgo de cada alumno y lo muestra con un semáforo (bajo, moderado y alto). El tutor recibe alertas y recomendaciones que revisa antes de enviarlas a la familia, y el colegio mide al modelo frente a los retiros reales para reentrenarlo con sus propios datos.
+
+Ninguna decisión es automática: el modelo orienta y las personas deciden. Las familias nunca ven niveles de riesgo ni probabilidades.
+
+## Qué hace cada rol
+
+| Rol | Puede |
+|---|---|
+| **Dirección** | Ver el semáforo del colegio y la ficha de cada estudiante; configurar bimestres, cursos, personal y aulas; cerrar el año; registrar retiros; activar versiones del modelo; atender solicitudes de datos |
+| **Docente / tutor** | Registrar asistencia, notas y conducta; atender alertas; revisar y enviar recomendaciones; registrar actas y el seguimiento semanal |
+| **Análisis** | Importar datos en dos pasos; ejecutar evaluaciones; ajustar umbrales; medir y reentrenar el modelo |
+| **Familia** | Ver el avance de su hijo, las sugerencias aprobadas y responder la encuesta y el seguimiento mensual; ejercer sus derechos sobre los datos |
+
+## Calidad
+
+| Aspecto | Resultado |
+|---|---|
+| Tests de la API | 261, cobertura 96 % |
+| Tests web | 91 de componentes y 13 E2E con Playwright |
+| Accesibilidad | Sin problemas graves WCAG 2 A/AA (axe-core) |
+| Rendimiento | Todas las pantallas bajo 152 ms (p95) con 560 estudiantes |
+| Seguridad | OWASP Top 10 mapeado en [SECURITY.md](SECURITY.md) |
+| Privacidad | Ley N.° 29733: aviso, consentimiento y derechos ARCO |
+
+Detalles en [docs/testing.md](docs/testing.md) y [docs/performance.md](docs/performance.md).
 
 ## Arquitectura
 
@@ -40,7 +64,7 @@ edutrack/
 
 ```bash
 cp .env.example .env
-docker compose up --build        # mysql, api y ml
+docker compose up --build        # mysql, api, ml, worker y mailpit
 ```
 
 En otra terminal, el frontend con recarga en caliente:
@@ -70,11 +94,12 @@ docker compose exec api python -m scripts.seed_dev
 | Usuario | Rol |
 |---|---|
 | director@edutrack.dev | Director |
-| docente@edutrack.dev | Docente |
+| docente@edutrack.dev | Docente, tutor de 3° A |
+| docente2@edutrack.dev | Docente, tutor de 3° B |
 | padre@edutrack.dev | Padre de familia |
 | analista@edutrack.dev | Analista |
 
-Todos usan la contraseña `Edutrack123!`.
+Todos usan la contraseña `Edutrack123!`. Para un colegio de tamaño real (unos 560 estudiantes), agrega `--size large` al seed.
 
 ### Modelo de Machine Learning
 
@@ -115,11 +140,14 @@ Para levantar también el frontend compilado detrás de Nginx: `docker compose -
 cd services/api && pip install -r requirements-dev.txt && pytest
 cd services/ml  && pip install -r requirements-dev.txt && pytest
 cd apps/web     && npm test
+cd apps/web     && npm run e2e      # con la aplicación levantada y los datos demo
 ```
 
-## Datos
+## Datos y privacidad
 
-El proyecto usa un **dataset sintético**. No se utilizan datos reales de estudiantes, en cumplimiento de la Ley N.° 29733 de Protección de Datos Personales.
+El modelo inicial se entrena con un **dataset sintético**. En un colegio real, el área de análisis puede reentrenarlo con resultados reales **anonimizados** (sin nombres, códigos ni fechas), y la dirección decide si activa la nueva versión ([ADR-0013](docs/adr/0013-model-lifecycle.md)).
+
+El aviso de privacidad incluido es una **plantilla**: antes de usarlo con un colegio debe completarse con sus datos legales y revisarlo un abogado.
 
 ## Flujo de trabajo
 
