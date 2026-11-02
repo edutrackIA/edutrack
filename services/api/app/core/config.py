@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix="API_", extra="ignore")
 
     app_name: str = "EduTrack API"
-    version: str = "0.1.0"
+    version: str = "1.0.0"
     environment: str = "development"
     database_url: str = "mysql+pymysql://edutrack:edutrack@localhost:3306/edutrack"
     ml_service_url: str = "http://localhost:8001"
