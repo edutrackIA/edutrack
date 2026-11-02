@@ -1,7 +1,7 @@
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.domain import Alert, Recommendation, RecommendationStatus, Student
+from app.domain import Alert, Recommendation, RecommendationStatus, RiskAssessment, Student
 
 
 class RecommendationRepository:
@@ -52,6 +52,13 @@ class RecommendationRepository:
             .join(Student, Student.id == Recommendation.student_id)
             .where(Student.institution_id == institution_id)
             .order_by(Recommendation.created_at.desc(), Recommendation.id.desc())
+            # Everything the response needs, in a fixed number of queries (no N+1).
+            .options(
+                selectinload(Recommendation.student).options(
+                    joinedload(Student.classroom), selectinload(Student.guardians)
+                ),
+                selectinload(Recommendation.assessment),
+            )
         )
         if status is not None:
             query = query.where(Recommendation.status == status)
@@ -86,6 +93,13 @@ class AlertRepository:
             query = query.where(Alert.is_read.is_(not unread))
         total = self.db.scalar(select(func.count()).select_from(query.subquery())) or 0
         items = self.db.scalars(
-            query.order_by(Alert.created_at.desc(), Alert.id.desc()).offset(offset).limit(limit)
+            query.order_by(Alert.created_at.desc(), Alert.id.desc())
+            .offset(offset)
+            .limit(limit)
+            .options(
+                selectinload(Alert.assessment)
+                .selectinload(RiskAssessment.student)
+                .joinedload(Student.classroom)
+            )
         )
         return total, list(items)
