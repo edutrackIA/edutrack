@@ -14,11 +14,13 @@ class ImportErrorItem(BaseModel):
 class ImportJobResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    # A preview (dry run) is not stored, so it has no id or date.
+    id: int | None
     kind: ImportKind
     filename: str
     status: ImportStatus
     rows_ok: int
     rows_failed: int
     errors: list[ImportErrorItem]
-    created_at: datetime
+    created_at: datetime | None
+    preview: bool = False

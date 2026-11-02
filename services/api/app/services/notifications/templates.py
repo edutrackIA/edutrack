@@ -68,3 +68,163 @@ class RecommendationEmail:
   </body>
 </html>
 """
+
+
+AUTOMATIC_NOTICE = (
+    "Mensaje automático de EduTrack con datos registrados por el colegio. Si algún dato no es "
+    "correcto, comuníquese con el tutor."
+)
+
+
+@dataclass
+class InformativeEmail:
+    """Data-only message for families: attendance or grades, never advice."""
+
+    guardian_name: str
+    subject: str
+    intro: str
+    rows: list[tuple[str, str]]
+    institution_name: str
+    portal_url: str
+
+    def text(self) -> str:
+        rows = "\n".join(f"- {label}: {value}" for label, value in self.rows)
+        return (
+            f"Hola, {self.guardian_name}:\n\n{self.intro}\n\n{rows}\n\n"
+            f"Puede ver más detalles en el portal: {self.portal_url}\n\n"
+            f"{self.institution_name}\n\n---\n{AUTOMATIC_NOTICE}\n"
+        )
+
+    def html(self) -> str:
+        rows = "".join(
+            '<tr><td style="padding:8px 0;color:#4a5878">'
+            f"{escape(label)}</td>"
+            '<td style="padding:8px 0;text-align:right;font-weight:bold">'
+            f"{escape(value)}</td></tr>"
+            for label, value in self.rows
+        )
+        return f"""\
+<!doctype html>
+<html lang="es">
+  <body style="margin:0;padding:24px;background:#f4f6fb;font-family:Arial,sans-serif;color:#1f2937">
+    <table role="presentation" width="100%" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px">
+      <tr>
+        <td style="padding:24px 28px;background:#1168bd;border-radius:12px 12px 0 0;color:#ffffff">
+          <strong style="font-size:20px">EduTrack</strong><br>
+          <span style="font-size:14px">{escape(self.institution_name)}</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:28px">
+          <p>Hola, {escape(self.guardian_name)}:</p>
+          <p>{escape(self.intro)}</p>
+          <table role="presentation" width="100%" style="border-top:1px solid #d9e1ee;border-bottom:1px solid #d9e1ee">{rows}</table>
+          <p style="text-align:center;margin:28px 0">
+            <a href="{escape(self.portal_url)}"
+               style="background:#1168bd;color:#ffffff;padding:12px 22px;border-radius:8px;text-decoration:none">
+              Ver en el portal
+            </a>
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:16px 28px;background:#f9fafb;border-radius:0 0 12px 12px;font-size:12px;color:#6b7280">
+          {escape(AUTOMATIC_NOTICE)}
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+
+@dataclass
+class StaffNoticeEmail:
+    """Short operational notice for tutors and directors."""
+
+    recipient_name: str
+    subject: str
+    paragraphs: list[str]
+    portal_url: str
+
+    def text(self) -> str:
+        body = "\n\n".join(self.paragraphs)
+        return f"Hola, {self.recipient_name}:\n\n{body}\n\nIngresa a EduTrack: {self.portal_url}\n"
+
+    def html(self) -> str:
+        body = "".join(f"<p>{escape(paragraph)}</p>" for paragraph in self.paragraphs)
+        return (
+            '<!doctype html><html lang="es"><body style="font-family:Arial,sans-serif;'
+            'color:#1f2937;padding:24px">'
+            f"<p>Hola, {escape(self.recipient_name)}:</p>{body}"
+            f'<p><a href="{escape(self.portal_url)}">Ingresar a EduTrack</a></p>'
+            "</body></html>"
+        )
+
+
+@dataclass
+class InvitationEmail:
+    """Invitation for a guardian or a staff member to create their EduTrack password."""
+
+    recipient_name: str
+    # How the school registered them: "apoderado de Lucía", "docente", ...
+    registered_as: str
+    institution_name: str
+    link: str
+    valid_days: int
+
+    @property
+    def subject(self) -> str:
+        return f"{self.institution_name}: crea tu acceso a EduTrack"
+
+    def text(self) -> str:
+        return (
+            f"Hola, {self.recipient_name}:\n\n"
+            f"{self.institution_name} lo registró como {self.registered_as} en EduTrack.\n\n"
+            f"Cree su contraseña en este enlace (vence en {self.valid_days} días):\n{self.link}\n\n"
+            "Si no reconoce este correo, puede ignorarlo.\n"
+        )
+
+    def html(self) -> str:
+        return (
+            '<!doctype html><html lang="es"><body style="font-family:Arial,sans-serif;'
+            'color:#1f2937;padding:24px">'
+            f"<p>Hola, {escape(self.recipient_name)}:</p>"
+            f"<p>{escape(self.institution_name)} lo registró como "
+            f"<strong>{escape(self.registered_as)}</strong> en EduTrack.</p>"
+            f'<p><a href="{escape(self.link)}" style="background:#1168bd;color:#ffffff;'
+            'padding:12px 22px;border-radius:8px;text-decoration:none">Crear mi contraseña</a></p>'
+            f'<p style="color:#6b7280;font-size:13px">El enlace vence en {self.valid_days} días. '
+            "Si no reconoce este correo, puede ignorarlo.</p>"
+            "</body></html>"
+        )
+
+
+@dataclass
+class PasswordResetEmail:
+    recipient_name: str
+    link: str
+    valid_minutes: int
+
+    subject = "EduTrack: restablece tu contraseña"
+
+    def text(self) -> str:
+        return (
+            f"Hola, {self.recipient_name}:\n\n"
+            "Recibimos una solicitud para restablecer tu contraseña de EduTrack.\n\n"
+            f"Crea una nueva en este enlace (vence en {self.valid_minutes} minutos):\n{self.link}\n\n"
+            "Si no fuiste tú, ignora este correo: tu contraseña actual sigue siendo válida.\n"
+        )
+
+    def html(self) -> str:
+        return (
+            '<!doctype html><html lang="es"><body style="font-family:Arial,sans-serif;'
+            'color:#1f2937;padding:24px">'
+            f"<p>Hola, {escape(self.recipient_name)}:</p>"
+            "<p>Recibimos una solicitud para restablecer tu contraseña de EduTrack.</p>"
+            f'<p><a href="{escape(self.link)}" style="background:#1168bd;color:#ffffff;'
+            'padding:12px 22px;border-radius:8px;text-decoration:none">Crear nueva contraseña</a></p>'
+            f'<p style="color:#6b7280;font-size:13px">El enlace vence en {self.valid_minutes} '
+            "minutos. Si no fuiste tú, ignora este correo: tu contraseña actual sigue siendo "
+            "válida.</p></body></html>"
+        )

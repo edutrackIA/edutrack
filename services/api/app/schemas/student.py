@@ -3,7 +3,7 @@ from datetime import date
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain import BehaviorRecord, Grade, RiskAssessment, Student
-from app.domain.enums import Sex
+from app.domain.enums import ExitReason, Sex, StudentStatus
 from app.schemas.auth import UserResponse
 from app.schemas.risk import RiskAssessmentResponse
 
@@ -38,6 +38,10 @@ class StudentResponse(BaseModel):
     birth_date: date
     sex: Sex
     classroom_id: int
+    status: StudentStatus
+    exit_date: date | None
+    exit_reason: ExitReason | None
+    exit_note: str | None
     guardians: list[UserResponse]
     latest_risk: RiskAssessmentResponse | None = None
 
@@ -103,3 +107,32 @@ class StudentSummary(BaseModel):
     grades: list[GradeResponse]
     parent_suggestions: list[str]
     disclaimer: str | None = None
+
+
+class WithdrawalInput(BaseModel):
+    exit_date: date
+    reason: ExitReason
+    note: str | None = Field(default=None, max_length=500)
+
+
+class PromotionInput(BaseModel):
+    # Last grade of the school: students in it graduate instead of moving up.
+    final_grade: int = Field(default=5, ge=1, le=6)
+    repeating_codes: list[str] = Field(default_factory=list, max_length=500)
+    dry_run: bool = True
+
+
+class PromotionMove(BaseModel):
+    source: str
+    target: str
+    students: int
+
+
+class PromotionPlan(BaseModel):
+    year: int
+    moves: list[PromotionMove]
+    promoted: int
+    repeating: int
+    graduated: int
+    unknown_codes: list[str]
+    applied: bool

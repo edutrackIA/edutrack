@@ -7,9 +7,9 @@ from openpyxl import Workbook
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain import Attendance, AttendanceStatus, Grade, Student
+from app.domain import Attendance, AttendanceStatus, Grade, ImportJob, Student
 from app.services import import_service
-from tests.conftest import School, auth
+from tests.conftest import Outbox, School, auth
 
 URL = "/api/v1/imports"
 
@@ -186,7 +186,7 @@ def test_import_attendance_with_spanish_statuses(
     body = upload(client, school, "ATTENDANCE", content).json()
 
     assert (body["rows_ok"], body["rows_failed"]) == (2, 2)
-    assert body["errors"][0]["message"] == "Duplicated row in file"
+    assert body["errors"][0]["message"].startswith("Fila repetida: ya aparece en la fila ")
     records = db_session.scalars(select(Attendance).order_by(Attendance.date)).all()
     assert [(r.date, r.status) for r in records] == [
         (date(2026, 3, 10), AttendanceStatus.ABSENT),
@@ -201,7 +201,7 @@ def test_missing_columns_fail_the_import(client: TestClient, school: School) -> 
     body = upload(client, school, "ATTENDANCE", b"student_code,date\nA001,2026-03-10\n").json()
 
     assert body["status"] == "FAILED"
-    assert body["errors"] == [{"row": 1, "column": "status", "message": "Missing column"}]
+    assert body["errors"] == [{"row": 1, "column": "status", "message": "Falta la columna"}]
 
 
 @pytest.mark.parametrize(
@@ -275,3 +275,51 @@ def test_download_template(client: TestClient, school: School) -> None:
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/csv")
     assert response.text.startswith("student_code,subject,score")
+
+
+def test_preview_validates_without_saving(
+    client: TestClient, school: School, db_session: Session
+) -> None:
+    content = "student_code,subject,score\nA001,Matemática,15\nA001,Física,12\n".encode()
+
+    response = client.post(
+        URL,
+        data={"kind": "GRADES", "period_id": str(school.period.id), "dry_run": "true"},
+        files={"file": ("notas.csv", content, "text/csv")},
+        headers=auth(school.analyst),
+    )
+
+    body = response.json()
+    assert body["preview"] is True
+    assert body["id"] is None
+    assert (body["rows_ok"], body["rows_failed"]) == (1, 1)
+    assert db_session.scalars(select(Grade)).all() == []
+    assert db_session.scalars(select(ImportJob)).all() == []
+
+
+GUARDIANS_CSV = (
+    "student_code,full_name,email,kinship\n"
+    "A002,Rosa Huamán,rosa@correo.com,Madre\n"
+    "A002,Profe Infiltrado,teacher@school.dev,Padre\n"
+).encode()
+
+
+def test_guardian_import_links_and_invites_after_saving(
+    client: TestClient, school: School, outbox: Outbox
+) -> None:
+    preview = client.post(
+        URL,
+        data={"kind": "GUARDIANS", "dry_run": "true"},
+        files={"file": ("apoderados.csv", GUARDIANS_CSV, "text/csv")},
+        headers=auth(school.analyst),
+    ).json()
+    assert (preview["rows_ok"], preview["rows_failed"]) == (1, 1)
+    assert outbox.messages == []
+
+    body = upload(client, school, "GUARDIANS", GUARDIANS_CSV, "apoderados.csv").json()
+
+    assert (body["rows_ok"], body["rows_failed"]) == (1, 1)
+    assert (
+        body["errors"][0]["message"] == "El correo teacher@school.dev ya pertenece a otro usuario"
+    )
+    assert [message["To"] for message in outbox.messages] == ["rosa@correo.com"]

@@ -53,9 +53,22 @@ class UnprocessableError(AppError):
     code = "VALIDATION_ERROR"
 
 
+class TooManyRequestsError(AppError):
+    status_code = 429
+    code = "TOO_MANY_ATTEMPTS"
+
+    def __init__(self, message: str, *, retry_after: int) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
 async def app_error_handler(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, AppError)
-    headers = {"WWW-Authenticate": "Bearer"} if exc.status_code == 401 else None
+    headers: dict[str, str] | None = None
+    if exc.status_code == 401:
+        headers = {"WWW-Authenticate": "Bearer"}
+    elif isinstance(exc, TooManyRequestsError):
+        headers = {"Retry-After": str(exc.retry_after)}
     return JSONResponse(
         status_code=exc.status_code,
         content={"code": exc.code, "message": exc.message},

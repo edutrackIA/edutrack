@@ -53,7 +53,13 @@ def test_students_without_guardians_are_not_emailed(
 
     assert response.json()["status"] == "APPROVED"
     assert response.json()["sent_at"] is None
+    assert response.json()["family_contacts"] == 0
     assert outbox.messages == []
+
+    resend = client.post(f"{QUEUE_URL}/{item['id']}/send", headers=auth(school.teacher))
+
+    assert resend.status_code == 422
+    assert resend.json()["code"] == "NO_FAMILY_CONTACT"
 
 
 def test_email_failure_keeps_approval_and_allows_resend(
@@ -70,6 +76,7 @@ def test_email_failure_keeps_approval_and_allows_resend(
 
     assert approved.json()["status"] == "APPROVED"
     assert approved.json()["sent_at"] is None
+    assert approved.json()["family_contacts"] == 1
     assert failed_resend.status_code == 502
     assert failed_resend.json()["code"] == "EMAIL_NOT_SENT"
     assert resend.json()["sent_at"] is not None

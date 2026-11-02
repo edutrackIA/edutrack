@@ -2,7 +2,12 @@ from sqlalchemy.orm import Session
 
 from app.core.time import utcnow
 from app.domain import Institution, RiskLevel, User
-from app.services.dashboard_service import DashboardService, period_label
+from app.services.dashboard_service import (
+    FACTORS_PER_STUDENT,
+    RISK_LEVELS_WITH_FACTORS,
+    DashboardService,
+    period_label,
+)
 from app.services.reports.risk_report import ReportRow, RiskReport, render_risk_report
 from app.services.risk.features import FEATURE_LABELS
 
@@ -25,8 +30,10 @@ class ReportService:
                 probability=assessment.probability,
                 factors=[
                     FEATURE_LABELS.get(factor["feature"], factor["feature"])
-                    for factor in assessment.top_factors[:3]
-                ],
+                    for factor in assessment.top_factors[:FACTORS_PER_STUDENT]
+                ]
+                if assessment.level in RISK_LEVELS_WITH_FACTORS
+                else [],
             )
             for student in data.students
             if (assessment := data.assessments.get(student.id)) is not None

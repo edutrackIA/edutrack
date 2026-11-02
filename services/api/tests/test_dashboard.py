@@ -43,7 +43,12 @@ def test_director_dashboard_summary(client: TestClient, assessed_school: School)
             "high": 0,
         },
     ]
-    assert body["top_factors"] == [{"feature": "avg_score", "label": "Promedio", "frequency": 2}]
+    assert body["top_factors"] == [{"feature": "avg_score", "label": "Promedio", "frequency": 1}]
+    assert [(s["code"], s["level"], s["classroom"]) for s in body["students"]] == [
+        ("A001", "HIGH", "3° A"),
+        ("A002", "LOW", "3° A"),
+    ]
+    assert body["students"][0]["full_name"] == "Flores, Lucía"
 
 
 def test_dashboard_without_assessments(client: TestClient, school: School) -> None:
@@ -86,6 +91,7 @@ def test_report_rows_are_sorted_by_probability(
     assert [row.code for row in report.rows] == ["A001", "A002"]
     assert report.rows[0].level == RiskLevel.HIGH
     assert report.rows[0].factors == ["Promedio"]
+    assert report.rows[1].factors == []
     assert report.not_evaluated == 1
     assert report.scope == "Toda la institución"
 

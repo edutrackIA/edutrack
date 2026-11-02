@@ -1,7 +1,7 @@
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
-from app.domain import Guardianship, Student
+from app.domain import Guardianship, Student, StudentStatus
 
 
 class StudentRepository:
@@ -22,16 +22,23 @@ class StudentRepository:
     def list_for_institution(
         self, institution_id: int, classroom_id: int | None = None
     ) -> list[Student]:
-        query = select(Student).where(Student.institution_id == institution_id)
+        query = select(Student).where(
+            Student.institution_id == institution_id, Student.status == StudentStatus.ENROLLED
+        )
         if classroom_id is not None:
             query = query.where(Student.classroom_id == classroom_id)
-        return list(self.db.scalars(query.order_by(Student.id)))
+        return list(
+            self.db.scalars(query.order_by(Student.id).options(joinedload(Student.classroom)))
+        )
 
     def list_for_guardian(self, guardian_id: int) -> list[Student]:
         query = (
             select(Student)
             .join(Guardianship, Guardianship.student_id == Student.id)
-            .where(Guardianship.guardian_id == guardian_id)
+            .where(
+                Guardianship.guardian_id == guardian_id,
+                Student.status == StudentStatus.ENROLLED,
+            )
             .order_by(Student.last_name, Student.first_name)
         )
         return list(self.db.scalars(query))

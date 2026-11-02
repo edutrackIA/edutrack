@@ -47,6 +47,19 @@ services:
       - "8001:8001"
     mem_limit: 512m
 
+  worker:
+    build: ./services/api
+    env_file: .env
+    command: python -m app.worker serve
+    volumes:
+      - ./services/api:/app
+    mem_limit: 192m
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
   mailpit:
     image: axllent/mailpit:latest
     ports:

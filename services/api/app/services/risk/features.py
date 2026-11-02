@@ -43,16 +43,16 @@ class FeatureBuilder:
     def build(self, student: Student, period: AcademicPeriod) -> FeatureResult:
         grades = self.academic.list_grades(student.id, period.id)
         if not grades:
-            return FeatureResult(missing="No grades for the period")
+            return FeatureResult(missing="Sin notas en el bimestre")
 
         counts = self.academic.attendance_counts(student.id, period.start_date, period.end_date)
         total_days = sum(counts.values())
         if not total_days:
-            return FeatureResult(missing="No attendance for the period")
+            return FeatureResult(missing="Sin asistencia registrada en el bimestre")
 
         survey = self.surveys.latest_until(student.id, period)
         if survey is None:
-            return FeatureResult(missing="No family survey")
+            return FeatureResult(missing="Sin encuesta familiar")
 
         scores = [grade.score for grade in grades]
         average = sum(scores) / len(scores)

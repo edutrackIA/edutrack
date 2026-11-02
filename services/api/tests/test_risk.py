@@ -84,9 +84,9 @@ def test_feature_builder_uses_previous_period_for_trend(
 @pytest.mark.parametrize(
     ("grades", "attendance", "survey", "reason"),
     [
-        (False, True, True, "No grades for the period"),
-        (True, False, True, "No attendance for the period"),
-        (True, True, False, "No family survey"),
+        (False, True, True, "Sin notas en el bimestre"),
+        (True, False, True, "Sin asistencia registrada en el bimestre"),
+        (True, True, False, "Sin encuesta familiar"),
     ],
 )
 def test_feature_builder_reports_missing_data(
@@ -125,7 +125,7 @@ def test_analyst_runs_assessment(
     assert body["model_version"] == "rf-test"
     assert body["by_level"] == {"LOW": 1, "MEDIUM": 0, "HIGH": 1}
     reasons = {item["student_id"]: item["reason"] for item in body["skipped_students"]}
-    assert reasons[school.student_b.id] == "No family survey"
+    assert reasons[school.student_b.id] == "Sin encuesta familiar"
 
 
 def test_rerun_updates_instead_of_duplicating(

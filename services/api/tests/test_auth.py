@@ -127,11 +127,20 @@ def test_refresh_rotates_tokens(
 
 
 def test_reusing_a_rotated_refresh_token_revokes_all_sessions(
-    client: TestClient, make_user: Callable[..., User], login: Callable[..., dict]
+    client: TestClient,
+    db_session: Session,
+    make_user: Callable[..., User],
+    login: Callable[..., dict],
 ) -> None:
     make_user()
     first = login()
     second = client.post(REFRESH_URL, json={"refresh_token": first["refresh_token"]}).json()
+    rotated = db_session.scalar(
+        select(RefreshToken).where(RefreshToken.token_hash == hash_token(first["refresh_token"]))
+    )
+    assert rotated is not None and rotated.revoked_at is not None
+    rotated.revoked_at -= timedelta(minutes=5)
+    db_session.commit()
 
     reuse = client.post(REFRESH_URL, json={"refresh_token": first["refresh_token"]})
     after_reuse = client.post(REFRESH_URL, json={"refresh_token": second["refresh_token"]})
@@ -139,6 +148,37 @@ def test_reusing_a_rotated_refresh_token_revokes_all_sessions(
     assert reuse.status_code == 401
     assert reuse.json()["code"] == "INVALID_REFRESH_TOKEN"
     assert after_reuse.status_code == 401
+
+
+def test_concurrent_reuse_within_grace_period_keeps_the_session(
+    client: TestClient, make_user: Callable[..., User], login: Callable[..., dict]
+) -> None:
+    make_user()
+    first = login()
+    client.post(REFRESH_URL, json={"refresh_token": first["refresh_token"]})
+
+    again = client.post(REFRESH_URL, json={"refresh_token": first["refresh_token"]})
+
+    assert again.status_code == 200
+    assert client.get(ME_URL, headers=auth_header(again.json()["access_token"])).status_code == 200
+    renewed = client.post(REFRESH_URL, json={"refresh_token": again.json()["refresh_token"]})
+    assert renewed.status_code == 200
+
+
+def test_logged_out_token_is_never_accepted_again(
+    client: TestClient, make_user: Callable[..., User], login: Callable[..., dict]
+) -> None:
+    make_user()
+    tokens = login()
+    client.post(
+        LOGOUT_URL,
+        json={"refresh_token": tokens["refresh_token"]},
+        headers=auth_header(tokens["access_token"]),
+    )
+
+    response = client.post(REFRESH_URL, json={"refresh_token": tokens["refresh_token"]})
+
+    assert response.status_code == 401
 
 
 def test_refresh_rejects_unknown_token(client: TestClient) -> None:

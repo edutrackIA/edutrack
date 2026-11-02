@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session, sessionmaker  # noqa: E402
 from sqlalchemy.pool import StaticPool  # noqa: E402
 
 from app.core.database import Base, get_db  # noqa: E402
+from app.core.privacy import PRIVACY_NOTICE_VERSION  # noqa: E402
 from app.core.security import create_access_token, hash_password  # noqa: E402
 from app.domain import (  # noqa: E402
     AcademicPeriod,
@@ -28,6 +29,7 @@ from app.domain import (  # noqa: E402
     Guardianship,
     Institution,
     ParentEducation,
+    PrivacyConsent,  # noqa: E402
     Role,
     Sex,
     Student,
@@ -168,8 +170,11 @@ def school(db_session: Session, institution: Institution) -> School:
     teacher = _user(db, institution.id, "teacher@school.dev", Role.TEACHER)
     other_teacher = _user(db, institution.id, "teacher2@school.dev", Role.TEACHER)
     parent = _user(db, institution.id, "parent@school.dev", Role.PARENT)
+    # The demo guardian already accepted the privacy notice; tests of consent create others.
+    db.add(PrivacyConsent(user_id=parent.id, notice_version=PRIVACY_NOTICE_VERSION))
 
-    math, language = Subject(name="Matemática"), Subject(name="Comunicación")
+    math = Subject(institution_id=institution.id, name="Matemática")
+    language = Subject(institution_id=institution.id, name="Comunicación")
     period = AcademicPeriod(
         institution_id=institution.id,
         year=2026,
@@ -359,3 +364,13 @@ def outbox() -> Iterator[Outbox]:
     app.dependency_overrides[get_email_sender] = lambda: box
     yield box
     app.dependency_overrides.pop(get_email_sender, None)
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limits() -> Iterator[None]:
+    """Failed-attempt counters live in memory; every test starts with a clean slate."""
+    from app.core.rate_limit import ALL_LIMITERS
+
+    for limiter in ALL_LIMITERS:
+        limiter.clear()
+    yield

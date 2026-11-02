@@ -20,5 +20,5 @@ class ClassroomResponse(BaseModel):
             grade=classroom.grade,
             section=classroom.section,
             tutor=UserResponse.model_validate(classroom.tutor) if classroom.tutor else None,
-            student_count=len(classroom.students),
+            student_count=len(classroom.enrolled),
         )

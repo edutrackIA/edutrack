@@ -42,3 +42,11 @@ services/ml/data/synthetic/*.csv
 
 # --- Docker ---
 docker-data/
+
+# --- Playwright ---
+test-results/
+playwright-report/
+blob-report/
+
+# Model registry (one folder per version): generated per installation, never versioned.
+services/ml/models/versions/

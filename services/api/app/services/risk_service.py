@@ -45,7 +45,14 @@ class RiskService:
         for student in students.values():
             result = self.features.build(student, period)
             if result.features is None:
-                skipped.append(SkippedStudent(student_id=student.id, reason=result.missing or ""))
+                skipped.append(
+                    SkippedStudent(
+                        student_id=student.id,
+                        code=student.code,
+                        full_name=student.full_name,
+                        reason=result.missing or "",
+                    )
+                )
             else:
                 requests.append({"student_id": student.id, "features": result.features})
 

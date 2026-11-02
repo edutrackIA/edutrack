@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.core.errors import BadGatewayError, ConflictError, NotFoundError
+from app.core.errors import BadGatewayError, ConflictError, NotFoundError, UnprocessableError
 from app.core.time import utcnow
 from app.domain import (
     Alert,
@@ -16,7 +16,7 @@ from app.repositories.recommendation_repository import AlertRepository, Recommen
 from app.repositories.student_repository import StudentRepository
 from app.services.access_policy import AccessPolicy
 from app.services.notifications.email_sender import EmailSender
-from app.services.notifications.notification_service import NotificationService
+from app.services.notifications.notification_service import Delivery, NotificationService
 from app.services.recommendations.generator import RecommendationGenerator
 
 ALERT_LEVELS = {RiskLevel.MEDIUM, RiskLevel.HIGH}
@@ -93,7 +93,12 @@ class RecommendationService:
         self.policy.ensure_can_manage_commitments(user, recommendation.student)
         if recommendation.status != RecommendationStatus.APPROVED:
             raise ConflictError("Only approved recommendations can be sent")
-        if not NotificationService(self.db, sender).send_recommendation(recommendation):
+        delivery = NotificationService(self.db, sender).send_recommendation(recommendation)
+        if delivery == Delivery.NO_RECIPIENTS:
+            raise UnprocessableError(
+                "The student has no guardian with an email", code="NO_FAMILY_CONTACT"
+            )
+        if delivery == Delivery.FAILED:
             raise BadGatewayError("The email could not be delivered", code="EMAIL_NOT_SENT")
         return recommendation
 

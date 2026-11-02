@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from app.domain import Alert, Recommendation, RecommendationStatus, RiskLevel
 from app.schemas.student import StudentListItem
+from app.services.notifications.notification_service import family_contacts
 
 
 class RecommendationResponse(BaseModel):
@@ -17,6 +18,7 @@ class RecommendationResponse(BaseModel):
     reviewed_at: datetime | None
     sent_at: datetime | None
     created_at: datetime
+    family_contacts: int
 
     @classmethod
     def from_model(cls, recommendation: Recommendation) -> "RecommendationResponse":
@@ -31,6 +33,7 @@ class RecommendationResponse(BaseModel):
             reviewed_at=recommendation.reviewed_at,
             sent_at=recommendation.sent_at,
             created_at=recommendation.created_at,
+            family_contacts=family_contacts(recommendation),
         )
 
 

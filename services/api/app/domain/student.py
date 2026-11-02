@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.domain.classroom import Classroom
-from app.domain.enums import Sex
+from app.domain.enums import ExitReason, Sex, StudentStatus
 from app.domain.types import BigIntPK
 from app.domain.user import User
 
@@ -21,9 +21,19 @@ class Student(Base):
     last_name: Mapped[str] = mapped_column(String(80))
     birth_date: Mapped[date]
     sex: Mapped[Sex] = mapped_column(Enum(Sex, name="student_sex"))
+    status: Mapped[StudentStatus] = mapped_column(
+        Enum(StudentStatus, name="student_status"), default=StudentStatus.ENROLLED
+    )
+    exit_date: Mapped[date | None]
+    exit_reason: Mapped[ExitReason | None] = mapped_column(Enum(ExitReason, name="exit_reason"))
+    exit_note: Mapped[str | None] = mapped_column(String(500))
 
     classroom: Mapped[Classroom] = relationship(back_populates="students")
     guardians: Mapped[list[User]] = relationship(secondary="guardianships", viewonly=True)
+
+    @property
+    def is_enrolled(self) -> bool:
+        return self.status == StudentStatus.ENROLLED
 
     @property
     def full_name(self) -> str:

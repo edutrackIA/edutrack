@@ -3,24 +3,42 @@ from app.domain.attendance import Attendance
 from app.domain.classroom import Classroom
 from app.domain.commitment import Commitment
 from app.domain.course_assignment import CourseAssignment
+from app.domain.data_request import DataRequest, PrivacyConsent
 from app.domain.enums import (
     AttendanceStatus,
     CommitmentStatus,
+    DataRequestKind,
+    DataRequestStatus,
+    ExitReason,
+    FamilyMessageKind,
+    FamilyMessageStatus,
+    FamilyMood,
+    HomeChange,
     ImportKind,
     ImportStatus,
+    ModelAction,
     ParentEducation,
     RecommendationStatus,
     RiskLevel,
     Role,
     Sex,
+    SituationAction,
+    SituationKind,
+    StudentStatus,
+    TokenPurpose,
 )
+from app.domain.family_checkin import FamilyCheckin
 from app.domain.family_survey import FamilySurvey
 from app.domain.grade import BehaviorRecord, Grade
 from app.domain.import_job import ImportJob
 from app.domain.institution import Institution
+from app.domain.invitation import Invitation
+from app.domain.messaging import FamilyMessage, NotificationLog
+from app.domain.model_event import ModelEvent
 from app.domain.recommendation import Alert, Recommendation
 from app.domain.refresh_token import RefreshToken
 from app.domain.risk import RiskAssessment, RiskThreshold
+from app.domain.situation import SituationEvent, StudentSituation, WeeklyCheckin
 from app.domain.student import Guardianship, Student
 from app.domain.subject import Subject
 from app.domain.user import User
@@ -35,13 +53,28 @@ __all__ = [
     "Commitment",
     "CommitmentStatus",
     "CourseAssignment",
+    "DataRequest",
+    "DataRequestKind",
+    "DataRequestStatus",
+    "ExitReason",
+    "FamilyCheckin",
+    "FamilyMessage",
+    "FamilyMessageKind",
+    "FamilyMessageStatus",
+    "FamilyMood",
     "FamilySurvey",
     "Grade",
     "Guardianship",
+    "HomeChange",
     "ImportJob",
     "ImportKind",
     "ImportStatus",
     "Institution",
+    "Invitation",
+    "ModelAction",
+    "ModelEvent",
+    "NotificationLog",
+    "PrivacyConsent",
     "ParentEducation",
     "Recommendation",
     "RecommendationStatus",
@@ -51,7 +84,14 @@ __all__ = [
     "RiskThreshold",
     "Role",
     "Sex",
+    "SituationAction",
+    "SituationEvent",
+    "SituationKind",
+    "StudentSituation",
+    "StudentStatus",
+    "TokenPurpose",
     "Student",
     "Subject",
     "User",
+    "WeeklyCheckin",
 ]

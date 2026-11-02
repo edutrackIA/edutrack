@@ -37,7 +37,7 @@ def test_assessment_creates_pending_recommendations(
     }
     high = recommendation_for(client, school, school.student_a.id)
     assert high["student"]["risk_level"] == "HIGH"
-    assert high["parent_items"][0].startswith("Rendimiento:")
+    assert high["parent_items"][0].startswith("Asistencia:")
     assert "Teacher" in high["parent_items"][-1]
     low = recommendation_for(client, school, school.student_a2.id)
     assert low["parent_items"][0].startswith("Buen desempeño: Mateo")
@@ -50,7 +50,9 @@ def test_family_messages_never_mention_risk(client: TestClient, assessed_school:
         assert "probabilidad" not in text
 
 
-def test_generator_names_failing_subjects(evaluated_school: School, db_session: Session) -> None:
+def test_generator_uses_real_data_and_names_failing_subjects(
+    evaluated_school: School, db_session: Session
+) -> None:
     school = evaluated_school
     assessment = RiskAssessment(
         student_id=school.student_a.id,
@@ -61,19 +63,16 @@ def test_generator_names_failing_subjects(evaluated_school: School, db_session: 
         top_factors=[
             {"feature": "failed_subjects", "value": 2, "contribution": 0.3},
             {"feature": "attendance_rate", "value": 0.7, "contribution": 0.2},
-            {"feature": "parent_education", "value": "SECONDARY", "contribution": 0.1},
         ],
     )
 
     result = RecommendationGenerator(db_session).generate(school.student_a, assessment)
 
-    assert result.parent_items[0] == (
-        "Cursos a reforzar: Comunicación, Matemática. Acordar un horario fijo de estudio en "
-        "casa, de al menos una hora diaria, puede ayudarle mucho."
-    )
-    assert result.parent_items[1].startswith("Asistencia: Lucía")
-    assert len(result.parent_items) == 3
-    assert result.teacher_items[0] == "Derivar a reforzamiento en: Comunicación, Matemática."
+    assert result.parent_items[0].startswith("Asistencia: ")
+    assert result.parent_items[1].startswith("Cursos a reforzar: Comunicación, Matemática.")
+    assert result.parent_items[2].startswith("Recursos:")
+    assert result.parent_items[3].startswith("Seguimiento: su tutor, Teacher")
+    assert "Derivar a reforzamiento en: Comunicación, Matemática." in result.teacher_items
 
 
 def test_tutor_receives_alert_only_for_moderate_or_high_risk(

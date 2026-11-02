@@ -66,3 +66,28 @@ def generate_refresh_token() -> str:
 
 def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+MIN_PASSWORD_LENGTH = 8
+
+
+def password_problems(password: str) -> list[str]:
+    """Rules for passwords people choose themselves. Empty list means it is acceptable."""
+    problems = []
+    if len(password) < MIN_PASSWORD_LENGTH:
+        problems.append(f"Debe tener al menos {MIN_PASSWORD_LENGTH} caracteres")
+    if not any(char.isalpha() for char in password):
+        problems.append("Debe incluir al menos una letra")
+    if not any(char.isdigit() for char in password):
+        problems.append("Debe incluir al menos un número")
+    return problems
+
+
+def new_url_token() -> tuple[str, str]:
+    """Random token for a link and the SHA-256 hash to store instead of it."""
+    raw = secrets.token_urlsafe(32)
+    return raw, hash_url_token(raw)
+
+
+def hash_url_token(raw: str) -> str:
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()

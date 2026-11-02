@@ -14,11 +14,14 @@ from app.repositories.import_repository import ImportRepository
 from app.services.imports.importers import (
     AttendanceImporter,
     GradeImporter,
+    GuardianImporter,
     RowImporter,
     RowValidationError,
     StudentImporter,
 )
 from app.services.imports.parsing import FileFormatError, UnsupportedFileError, parse_file
+from app.services.invitation_service import InvitationService
+from app.services.notifications.email_sender import EmailSender
 
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024
 MAX_ROWS = 5000
@@ -31,14 +34,20 @@ TEMPLATES = {
     ),
     ImportKind.GRADES: "student_code,subject,score\n20260001,Matemática,15.5\n",
     ImportKind.ATTENDANCE: "student_code,date,status\n20260001,2026-03-10,PRESENT\n",
+    ImportKind.GUARDIANS: (
+        "student_code,full_name,email,kinship\n"
+        "20260001,Rosa Huamán Flores,rosa.huaman@correo.com,Madre\n"
+    ),
 }
 
 
 class ImportService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session, sender: EmailSender | None = None) -> None:
         self.db = db
+        self.sender = sender
         self.jobs = ImportRepository(db)
         self.academic = AcademicRepository(db)
+        self.dry_run = False
 
     def run(
         self,
@@ -48,7 +57,10 @@ class ImportService:
         filename: str,
         content: bytes,
         period_id: int | None = None,
+        dry_run: bool = False,
     ) -> ImportJob:
+        """Import the valid rows. With dry_run, validate everything and save nothing."""
+        self.dry_run = dry_run
         if len(content) > MAX_UPLOAD_BYTES:
             raise PayloadTooLargeError(f"Files are limited to {MAX_UPLOAD_BYTES // 1024} KB")
         importer = self._importer(user, kind, period_id)
@@ -73,28 +85,34 @@ class ImportService:
 
         missing = [column for column in importer.required_columns if column not in headers]
         if missing:
-            errors = [_error(1, column, "Missing column") for column in missing]
+            errors = [_error(1, column, "Falta la columna") for column in missing]
             return self._finish(job, errors)
         if not rows:
-            return self._finish(job, [_error(None, None, "The file has no data rows")])
+            return self._finish(job, [_error(None, None, "El archivo no tiene filas con datos")])
         if len(rows) > MAX_ROWS:
-            return self._finish(job, [_error(None, None, f"Files are limited to {MAX_ROWS} rows")])
+            return self._finish(
+                job, [_error(None, None, f"El archivo supera el máximo de {MAX_ROWS} filas")]
+            )
 
         errors: list[dict[str, Any]] = []
-        seen: set[object] = set()
+        first_line: dict[object, int] = {}
         for line_number, row in rows:
             key = importer.key(row)
-            if key in seen:
-                errors.append(_error(line_number, None, "Duplicated row in file"))
+            if key in first_line:
+                message = f"Fila repetida: ya aparece en la fila {first_line[key]}"
+                errors.append(_error(line_number, None, message))
                 continue
-            seen.add(key)
+            first_line[key] = line_number
             try:
                 importer.import_row(row)
                 job.rows_ok += 1
             except RowValidationError as exc:
                 errors.append(_error(line_number, exc.column, exc.message))
 
-        return self._finish(job, errors)
+        job = self._finish(job, errors)
+        if not self.dry_run:
+            importer.after_commit()
+        return job
 
     def get(self, user: User, job_id: int) -> ImportJob:
         job = self.jobs.get(job_id)
@@ -107,6 +125,9 @@ class ImportService:
             return StudentImporter(self.db, user.institution_id)
         if kind == ImportKind.ATTENDANCE:
             return AttendanceImporter(self.db, user.institution_id)
+        if kind == ImportKind.GUARDIANS:
+            invitations = InvitationService(self.db, self.sender)
+            return GuardianImporter(self.db, user.institution_id, invitations.invite)
 
         if period_id is None:
             raise UnprocessableError("period_id is required for grade imports")
@@ -120,6 +141,10 @@ class ImportService:
         job.rows_failed = len(row_errors)
         job.errors = errors[:MAX_STORED_ERRORS]
         job.status = ImportStatus.DONE if job.rows_ok > 0 else ImportStatus.FAILED
+        if self.dry_run:
+            # Preview: undo every row written while validating, keep only the report.
+            self.db.rollback()
+            return job
         self.jobs.add(job)
         self.db.commit()
         return job

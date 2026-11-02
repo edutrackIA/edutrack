@@ -7,6 +7,7 @@ from app.repositories.student_repository import StudentRepository
 from app.repositories.survey_repository import SurveyRepository
 from app.schemas.survey import FamilySurveyInput
 from app.services.access_policy import AccessPolicy
+from app.services.privacy_service import PrivacyService
 
 
 class SurveyService:
@@ -18,6 +19,7 @@ class SurveyService:
         self.policy = AccessPolicy(db)
 
     def submit(self, user: User, student_id: int, data: FamilySurveyInput) -> FamilySurvey:
+        PrivacyService(self.db).ensure_consent(user)
         student = self._get_student(student_id)
         self.policy.ensure_can_submit_survey(user, student)
 

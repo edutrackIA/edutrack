@@ -1,6 +1,7 @@
 import logging
 import smtplib
 from email.message import EmailMessage
+from enum import StrEnum
 
 from sqlalchemy.orm import Session
 
@@ -14,6 +15,19 @@ from app.services.notifications.templates import RecommendationEmail
 logger = logging.getLogger(__name__)
 
 
+class Delivery(StrEnum):
+    SENT = "SENT"
+    NO_RECIPIENTS = "NO_RECIPIENTS"
+    FAILED = "FAILED"
+
+
+def family_contacts(recommendation: Recommendation) -> int:
+    """Active guardians with an email: who can actually receive the message."""
+    return sum(
+        1 for guardian in recommendation.student.guardians if guardian.is_active and guardian.email
+    )
+
+
 class NotificationService:
     def __init__(self, db: Session, sender: EmailSender) -> None:
         self.db = db
@@ -21,7 +35,7 @@ class NotificationService:
         self.academic = AcademicRepository(db)
         self.settings = get_settings()
 
-    def send_recommendation(self, recommendation: Recommendation) -> bool:
+    def send_recommendation(self, recommendation: Recommendation) -> Delivery:
         """Email the approved recommendation to every guardian of the student.
 
         A delivery failure never undoes the tutor's approval: `sent_at` stays empty
@@ -30,7 +44,7 @@ class NotificationService:
         student = recommendation.student
         guardians = [guardian for guardian in student.guardians if guardian.is_active]
         if not guardians:
-            return False
+            return Delivery.NO_RECIPIENTS
 
         period = self.academic.get_period(recommendation.period_id)
         institution = self.db.get(Institution, student.institution_id)
@@ -49,11 +63,11 @@ class NotificationService:
                 self.sender.send(self._build(email, guardian.email))
         except (smtplib.SMTPException, OSError):
             logger.warning("Could not send recommendation %s", recommendation.id, exc_info=True)
-            return False
+            return Delivery.FAILED
 
         recommendation.sent_at = utcnow()
         self.db.commit()
-        return True
+        return Delivery.SENT
 
     def _build(self, email: RecommendationEmail, recipient: str) -> EmailMessage:
         message = EmailMessage()

@@ -9,6 +9,7 @@ from app.domain import (
     AttendanceStatus,
     BehaviorRecord,
     Grade,
+    Student,
     Subject,
 )
 
@@ -16,6 +17,23 @@ from app.domain import (
 class AcademicRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
+
+    def list_periods(self, institution_id: int) -> list[AcademicPeriod]:
+        query = (
+            select(AcademicPeriod)
+            .where(AcademicPeriod.institution_id == institution_id)
+            .order_by(AcademicPeriod.start_date)
+        )
+        return list(self.db.scalars(query))
+
+    def periods_with_grades(self, institution_id: int) -> set[int]:
+        query = (
+            select(Grade.period_id)
+            .join(Student, Student.id == Grade.student_id)
+            .where(Student.institution_id == institution_id)
+            .distinct()
+        )
+        return set(self.db.scalars(query))
 
     def get_period(self, period_id: int) -> AcademicPeriod | None:
         return self.db.get(AcademicPeriod, period_id)
@@ -71,8 +89,17 @@ class AcademicRepository:
     def get_subject(self, subject_id: int) -> Subject | None:
         return self.db.get(Subject, subject_id)
 
-    def get_subject_by_name(self, name: str) -> Subject | None:
-        return self.db.scalar(select(Subject).where(func.lower(Subject.name) == name.lower()))
+    def get_subject_by_name(self, institution_id: int, name: str) -> Subject | None:
+        return self.db.scalar(
+            select(Subject).where(
+                Subject.institution_id == institution_id,
+                func.lower(Subject.name) == name.strip().lower(),
+            )
+        )
+
+    def list_subjects(self, institution_id: int) -> list[Subject]:
+        query = select(Subject).where(Subject.institution_id == institution_id)
+        return list(self.db.scalars(query.order_by(Subject.name)))
 
     def list_grades(self, student_id: int, period_id: int | None = None) -> list[Grade]:
         query = (
@@ -106,6 +133,14 @@ class AcademicRepository:
         return self.db.scalar(
             select(Attendance).where(Attendance.student_id == student_id, Attendance.date == day)
         )
+
+    def attendance_records(self, student_id: int, start: date, end: date) -> list[Attendance]:
+        query = select(Attendance).where(
+            Attendance.student_id == student_id,
+            Attendance.date >= start,
+            Attendance.date <= end,
+        )
+        return list(self.db.scalars(query))
 
     def add(self, entity: Grade | BehaviorRecord | Attendance) -> None:
         self.db.add(entity)

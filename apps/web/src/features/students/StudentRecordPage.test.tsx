@@ -1,0 +1,332 @@
+import { fireEvent, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+import { DIRECTOR_USER, TEACHER_USER } from '../../test/fixtures'
+import { renderPage } from '../../test/render'
+import { json, mockApi } from '../../test/server'
+import StudentRecordPage from './pages/StudentRecordPage'
+
+const STUDENT = {
+  id: 6,
+  code: '20260006',
+  first_name: 'Lucía',
+  last_name: 'Ramírez Gutiérrez',
+  birth_date: '2012-04-10',
+  sex: 'F',
+  classroom_id: 1,
+  status: 'ENROLLED',
+  exit_date: null,
+  exit_reason: null,
+  exit_note: null,
+  guardians: [{ id: 4, email: 'padre@edutrack.dev', full_name: 'Rosa Huamán', role: 'PARENT', institution_id: 1 }],
+  latest_risk: null,
+}
+
+const RISK = [
+  {
+    id: 2,
+    period_id: 3,
+    probability: 0.94,
+    level: 'HIGH',
+    model_version: 'rf',
+    top_factors: [{ feature: 'attendance_rate', label: 'Asistencia', value: 0.78, contribution: 0.3 }],
+    created_at: '2026-10-25T00:00:00',
+  },
+  {
+    id: 1,
+    period_id: 2,
+    probability: 0.45,
+    level: 'MEDIUM',
+    model_version: 'rf',
+    top_factors: [],
+    created_at: '2026-07-20T00:00:00',
+  },
+]
+
+const BASE_HANDLERS: Record<string, () => Response> = {
+  'GET /students/6': () => json(STUDENT),
+  'GET /students/6/summary': () =>
+    json({ period_id: 3, average_score: 9.8, attendance_rate: 0.78, grades: [] }),
+  'GET /students/6/risk': () => json(RISK),
+  'GET /students/6/grades': () =>
+    json([
+      { subject_id: 1, subject: 'Matemática', period_id: 2, score: 12 },
+      { subject_id: 1, subject: 'Matemática', period_id: 3, score: 8 },
+    ]),
+  'GET /students/6/recommendations': () =>
+    json([
+      {
+        id: 9,
+        period_id: 3,
+        status: 'APPROVED',
+        parent_items: ['Asistencia: conversar sobre los motivos de las faltas.'],
+        teacher_items: ['Contactar a la familia.'],
+        reviewed_at: '2026-10-25T10:00:00',
+        sent_at: '2026-10-25T10:00:00',
+        created_at: '2026-10-25T00:00:00',
+      },
+    ]),
+  'GET /periods': () =>
+    json([
+      { id: 2, year: 2026, bimester: 2, start_date: '2026-05-18', end_date: '2026-07-17', label: 'Bimestre 2, 2026' },
+      { id: 3, year: 2026, bimester: 3, start_date: '2026-08-03', end_date: '2026-10-02', label: 'Bimestre 3, 2026' },
+    ]),
+  'GET /classrooms': () =>
+    json([{ id: 1, year: 2026, grade: 3, section: 'A', tutor: null, student_count: 10 }]),
+}
+
+const FORBIDDEN = () => json({ code: 'FORBIDDEN', message: 'No' }, 403)
+
+BASE_HANDLERS['GET /students/6/guardians'] = () => json([])
+
+BASE_HANDLERS['GET /students/6/situations'] = () =>
+  json([
+    {
+      id: 1,
+      student_id: 6,
+      kind: 'HEALTH',
+      label: 'Problema de salud',
+      group: 'MESSAGE',
+      note: 'Hospitalizada una semana.',
+      started_on: '2026-10-20',
+      resolved_on: null,
+      created_at: '2026-10-20T10:00:00',
+    },
+  ])
+
+describe('StudentRecordPage', () => {
+  it('shows the full record to a teacher without family data', async () => {
+    mockApi({
+      ...BASE_HANDLERS,
+      'GET /students/6/commitments': FORBIDDEN,
+      'GET /students/6/surveys': FORBIDDEN,
+    })
+
+    renderPage(<StudentRecordPage />, {
+      user: TEACHER_USER,
+      route: '/estudiantes/:studentId',
+      path: '/estudiantes/6',
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Ramírez Gutiérrez, Lucía' }),
+    ).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Volver a 3° A' })).toHaveAttribute(
+      'href',
+      '/aulas?aula=1',
+    )
+    const history = await screen.findByRole('list', { name: 'Evaluaciones anteriores' })
+    expect(await within(history).findByText('Bimestre 2, 2026')).toBeInTheDocument()
+    const grades = await screen.findByRole('table', { name: 'Notas por curso y bimestre' })
+    expect(within(grades).getByText('(desaprobado)', { exact: false })).toBeInTheDocument()
+    expect(screen.getByText('Contactar a la familia.')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Solo el tutor del aula y la dirección pueden ver las actas.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Encuesta familiar' })).not.toBeInTheDocument()
+    expect(await screen.findByText('Hospitalizada una semana.')).toBeInTheDocument()
+  })
+
+  it('shows commitments and the family survey to the director', async () => {
+    mockApi({
+      ...BASE_HANDLERS,
+      'GET /students/6/commitments': () =>
+        json([
+          {
+            id: 1,
+            meeting_date: '2026-06-12',
+            agreements: 'Supervisar una hora diaria de estudio.',
+            follow_up_date: '2026-07-10',
+            status: 'OPEN',
+          },
+        ]),
+      'GET /students/6/surveys': () =>
+        json([
+          {
+            id: 1,
+            period_id: 2,
+            study_hours_week: 6,
+            parent_education: 'SECONDARY',
+            home_internet: true,
+            has_study_device: false,
+            family_communication: 3,
+            student_works: false,
+            household_size: 5,
+            submitted_at: '2026-06-01T00:00:00',
+          },
+        ]),
+    })
+
+    renderPage(<StudentRecordPage />, {
+      user: DIRECTOR_USER,
+      route: '/estudiantes/:studentId',
+      path: '/estudiantes/6',
+    })
+
+    expect(await screen.findByText('Supervisar una hora diaria de estudio.')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Encuesta familiar' })).toBeInTheDocument()
+    expect(screen.getByText('6 h por semana')).toBeInTheDocument()
+  })
+
+  it('lets the director register a guardian and see the invitation result', async () => {
+    const bodies: unknown[] = []
+    mockApi({
+      ...BASE_HANDLERS,
+      'GET /students/6/commitments': () => json([]),
+      'GET /students/6/surveys': () => json([]),
+      'POST /students/6/guardians': (init) => {
+        bodies.push(JSON.parse(String(init?.body)))
+        return json(
+          {
+            id: 30,
+            full_name: 'Rosa Huamán',
+            email: 'rosa@correo.com',
+            kinship: 'Madre',
+            has_access: false,
+            invitation_sent: true,
+          },
+          201,
+        )
+      },
+    })
+    renderPage(<StudentRecordPage />, {
+      user: DIRECTOR_USER,
+      route: '/estudiantes/:studentId',
+      path: '/estudiantes/6',
+    })
+    const user = userEvent.setup()
+
+    expect(await screen.findByText(/Sin apoderados registrados/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Agregar apoderado' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Agregar apoderado' })
+    await user.type(within(dialog).getByLabelText('Nombre completo'), 'Rosa Huamán')
+    await user.type(within(dialog).getByLabelText('Correo'), 'rosa@correo.com')
+    await user.click(within(dialog).getByRole('button', { name: 'Registrar apoderado' }))
+
+    expect(await screen.findByText('Invitación enviada a rosa@correo.com.')).toBeInTheDocument()
+    expect(bodies).toEqual([{ full_name: 'Rosa Huamán', email: 'rosa@correo.com', kinship: 'Madre' }])
+  })
+
+  it('lets the tutor register a meeting with the family', async () => {
+    const bodies: unknown[] = []
+    mockApi({
+      ...BASE_HANDLERS,
+      'GET /students/6/commitments': () => json([]),
+      'GET /students/6/surveys': FORBIDDEN,
+      'POST /students/6/commitments': (init) => {
+        bodies.push(JSON.parse(String(init?.body)))
+        return json({ id: 1 }, 201)
+      },
+    })
+    renderPage(<StudentRecordPage />, {
+      user: TEACHER_USER,
+      route: '/estudiantes/:studentId',
+      path: '/estudiantes/6',
+    })
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('button', { name: 'Registrar acta' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Registrar acta' })
+    fireEvent.change(within(dialog).getByLabelText('Fecha de la reunión'), {
+      target: { value: '2026-10-20' },
+    })
+    await user.type(within(dialog).getByLabelText('Acuerdos'), 'Revisar tareas cada noche.')
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar acta' }))
+
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toEqual({
+      guardian_id: 4,
+      meeting_date: '2026-10-20',
+      agreements: 'Revisar tareas cada noche.',
+      follow_up_date: null,
+    })
+  })
+
+  it('lets the director register that a student left the school', async () => {
+    const bodies: unknown[] = []
+    mockApi({
+      ...BASE_HANDLERS,
+      'GET /students/6/commitments': () => json([]),
+      'GET /students/6/surveys': () => json([]),
+      'POST /students/6/withdrawal': (init) => {
+        bodies.push(JSON.parse(String(init?.body)))
+        return json({ ...STUDENT, status: 'WITHDRAWN' })
+      },
+    })
+    renderPage(<StudentRecordPage />, {
+      user: DIRECTOR_USER,
+      route: '/estudiantes/:studentId',
+      path: '/estudiantes/6',
+    })
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('button', { name: 'Registrar retiro o traslado' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Registrar retiro o traslado' })
+    await user.selectOptions(within(dialog).getByLabelText('Motivo'), 'WORK')
+    expect(within(dialog).getByText(/Se registra como deserción/)).toBeInTheDocument()
+    fireEvent.change(within(dialog).getByLabelText('Fecha de salida'), {
+      target: { value: '2026-10-20' },
+    })
+    await user.click(within(dialog).getByRole('button', { name: 'Registrar salida' }))
+
+    await vi.waitFor(() =>
+      expect(bodies).toEqual([{ exit_date: '2026-10-20', reason: 'WORK', note: null }]),
+    )
+  })
+
+  it('tells everyone that the student is no longer enrolled', async () => {
+    mockApi({
+      ...BASE_HANDLERS,
+      'GET /students/6': () =>
+        json({ ...STUDENT, status: 'WITHDRAWN', exit_date: '2026-10-20', exit_reason: 'WORK' }),
+      'GET /students/6/commitments': FORBIDDEN,
+      'GET /students/6/surveys': FORBIDDEN,
+    })
+
+    renderPage(<StudentRecordPage />, {
+      user: TEACHER_USER,
+      route: '/estudiantes/:studentId',
+      path: '/estudiantes/6',
+    })
+
+    expect(await screen.findByText(/Se retiró el 20 de octubre de 2026: Trabajo/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Revertir salida' })).not.toBeInTheDocument()
+  })
+
+  it('goes back to the page that opened the record', async () => {
+    mockApi({
+      ...BASE_HANDLERS,
+      'GET /students/6/commitments': FORBIDDEN,
+      'GET /students/6/surveys': FORBIDDEN,
+    })
+
+    renderPage(<StudentRecordPage />, {
+      user: TEACHER_USER,
+      route: '/estudiantes/:studentId',
+      path: '/estudiantes/6',
+      state: { from: '/recomendaciones?estado=PENDING_REVIEW' },
+    })
+
+    expect(await screen.findByRole('link', { name: 'Volver a recomendaciones' })).toHaveAttribute(
+      'href',
+      '/recomendaciones?estado=PENDING_REVIEW',
+    )
+  })
+
+  it('explains when the student cannot be opened', async () => {
+    mockApi({
+      ...BASE_HANDLERS,
+      'GET /students/6': FORBIDDEN,
+      'GET /students/6/commitments': FORBIDDEN,
+      'GET /students/6/surveys': FORBIDDEN,
+    })
+
+    renderPage(<StudentRecordPage />, {
+      user: TEACHER_USER,
+      route: '/estudiantes/:studentId',
+      path: '/estudiantes/6',
+    })
+
+    expect(await screen.findByText('No pudimos abrir esta ficha')).toBeInTheDocument()
+  })
+})

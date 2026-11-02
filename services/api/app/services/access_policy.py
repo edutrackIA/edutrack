@@ -81,10 +81,59 @@ class AccessPolicy:
             return
         raise self._forbidden()
 
+    def ensure_can_take_attendance(self, user: User, classroom: Classroom) -> None:
+        """The tutor and every teacher with a course in the classroom take attendance."""
+        self._ensure_same_institution(user, classroom.institution_id, "Classroom")
+        if user.role == Role.DIRECTOR:
+            return
+        if user.role == Role.TEACHER and classroom.id in self.classrooms.teacher_classroom_ids(
+            user.id
+        ):
+            return
+        raise self._forbidden()
+
+    def ensure_can_record_classroom_behavior(self, user: User, classroom: Classroom) -> None:
+        """Conduct is graded once per period by the tutor (or direction and analysis)."""
+        self._ensure_same_institution(user, classroom.institution_id, "Classroom")
+        if user.role in (Role.DIRECTOR, Role.ANALYST):
+            return
+        if user.role == Role.TEACHER and classroom.tutor_id == user.id:
+            return
+        raise self._forbidden()
+
+    def ensure_can_record_course(self, user: User, classroom: Classroom, subject_id: int) -> None:
+        """Grades of a course: its teacher, or direction and analysis to correct them."""
+        self._ensure_same_institution(user, classroom.institution_id, "Classroom")
+        if user.role in (Role.DIRECTOR, Role.ANALYST):
+            return
+        if user.role == Role.TEACHER and self.classrooms.has_assignment(
+            classroom_id=classroom.id, subject_id=subject_id, teacher_id=user.id
+        ):
+            return
+        raise self._forbidden()
+
     def ensure_can_submit_survey(self, user: User, student: Student) -> None:
         self._ensure_same_institution(user, student.institution_id, "Student")
         if user.role == Role.ANALYST:
             return
+        if user.role == Role.PARENT and self.students.is_guardian(
+            guardian_id=user.id, student_id=student.id
+        ):
+            return
+        raise self._forbidden()
+
+    def ensure_can_manage_guardians(self, user: User, student: Student) -> None:
+        """Registering guardians is administrative work: direction and data analysis."""
+        self._ensure_same_institution(user, student.institution_id, "Student")
+        if user.role not in (Role.DIRECTOR, Role.ANALYST):
+            raise self._forbidden()
+
+    def ensure_can_manage_enrollment(self, user: User, student: Student) -> None:
+        """Withdrawals and transfers are administrative records: direction and analysis."""
+        self.ensure_can_manage_guardians(user, student)
+
+    def ensure_is_guardian(self, user: User, student: Student) -> None:
+        self._ensure_same_institution(user, student.institution_id, "Student")
         if user.role == Role.PARENT and self.students.is_guardian(
             guardian_id=user.id, student_id=student.id
         ):
@@ -120,6 +169,18 @@ class AccessPolicy:
         if user.role == Role.PARENT and self.students.is_guardian(
             guardian_id=user.id, student_id=student.id
         ):
+            return
+        raise self._forbidden()
+
+    def ensure_can_manage_situations(self, user: User, student: Student) -> None:
+        """Context situations are sensitive: only the classroom tutor and the director."""
+        self.ensure_can_manage_commitments(user, student)
+
+    def ensure_can_manage_checkin(self, user: User, classroom: Classroom) -> None:
+        self._ensure_same_institution(user, classroom.institution_id, "Classroom")
+        if user.role == Role.DIRECTOR:
+            return
+        if user.role == Role.TEACHER and classroom.tutor_id == user.id:
             return
         raise self._forbidden()
 

@@ -9,10 +9,16 @@ from app.repositories.academic_repository import AcademicRepository
 from app.repositories.classroom_repository import ClassroomRepository
 from app.repositories.risk_repository import RiskRepository
 from app.repositories.student_repository import StudentRepository
-from app.schemas.dashboard import ClassroomRiskSummary, DashboardSummary, FactorFrequency
+from app.schemas.dashboard import (
+    ClassroomRiskSummary,
+    DashboardSummary,
+    FactorFrequency,
+    StudentRiskItem,
+)
 from app.services.risk.features import FEATURE_LABELS
 
 FACTORS_PER_STUDENT = 3
+RISK_LEVELS_WITH_FACTORS = {RiskLevel.MEDIUM, RiskLevel.HIGH}
 TOP_FACTORS = 5
 
 
@@ -63,6 +69,7 @@ class DashboardService:
         by_level = dict.fromkeys(RiskLevel, 0)
         classrooms: dict[int, ClassroomRiskSummary] = {}
         factors: Counter[str] = Counter()
+        students: list[StudentRiskItem] = []
 
         for student in data.students:
             summary = classrooms.setdefault(
@@ -81,11 +88,24 @@ class DashboardService:
                 continue
             by_level[assessment.level] += 1
             summary.evaluated += 1
+            students.append(
+                StudentRiskItem(
+                    student_id=student.id,
+                    code=student.code,
+                    full_name=student.full_name,
+                    classroom_id=student.classroom_id,
+                    classroom=student.classroom.label,
+                    level=assessment.level,
+                    probability=assessment.probability,
+                )
+            )
             level_field = assessment.level.value.lower()
             setattr(summary, level_field, getattr(summary, level_field) + 1)
-            factors.update(
-                factor["feature"] for factor in assessment.top_factors[:FACTORS_PER_STUDENT]
-            )
+            # Factors only explain something when there is risk to explain.
+            if assessment.level in RISK_LEVELS_WITH_FACTORS:
+                factors.update(
+                    factor["feature"] for factor in assessment.top_factors[:FACTORS_PER_STUDENT]
+                )
 
         return DashboardSummary(
             period_id=data.period.id if data.period else None,
@@ -100,4 +120,5 @@ class DashboardService:
                 )
                 for feature, count in factors.most_common(TOP_FACTORS)
             ],
+            students=sorted(students, key=lambda item: (-item.probability, item.full_name)),
         )

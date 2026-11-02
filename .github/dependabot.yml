@@ -1,0 +1,32 @@
+# Weekly pull requests to keep dependencies patched. Minor and patch updates are grouped
+# so they arrive as one PR per ecosystem instead of dozens.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /services/api
+    schedule:
+      interval: weekly
+    groups:
+      api-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: pip
+    directory: /services/ml
+    schedule:
+      interval: weekly
+    groups:
+      ml-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /apps/web
+    schedule:
+      interval: weekly
+    groups:
+      web-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
